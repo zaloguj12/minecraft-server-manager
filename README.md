@@ -40,7 +40,7 @@ A lightweight, web-based Minecraft server manager. Point it at an existing serve
 ## Installation
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/minecraft-server-manager.git
+git clone https://github.com/zaloguj12/minecraft-server-manager.git
 cd minecraft-server-manager
 npm install
 npm start
