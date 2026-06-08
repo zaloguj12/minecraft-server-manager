@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Server Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============================================================
+       SIDEBAR
+  ============================================================ -->
+  <aside id="sidebar">
+    <div id="sidebar-brand">
+      <span class="brand-icon">&#9651;</span>
+      <span class="brand-text">MSM</span>
+    </div>
+
+    <div id="server-list">
+      <!-- Server items injected by app.js -->
+    </div>
+
+    <div id="sidebar-bottom">
+      <button id="btn-add-server" class="btn-add">+ Add Server</button>
+      <div id="playit-widget">
+        <div id="playit-header">
+          <span class="playit-label">playit.gg</span>
+          <span id="playit-status-dot" class="status-dot stopped"></span>
+        </div>
+        <div id="playit-tunnels"></div>
+        <div id="playit-claim-url"></div>
+        <div id="playit-controls">
+          <button id="btn-playit-toggle" class="btn-small btn-playit">Start</button>
+          <button id="btn-playit-config" class="btn-small btn-secondary">Config</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN CONTENT
+  ============================================================ -->
+  <main id="content">
+
+    <!-- Empty state (no server selected) -->
+    <div id="empty-state">
+      <div class="empty-icon">&#9651;</div>
+      <h2>No server selected</h2>
+      <p>Add a server or select one from the sidebar to get started.</p>
+      <button class="btn-primary" onclick="showAddModal()">+ Add Server</button>
+    </div>
+
+    <!-- Server view (shown when a server is selected) -->
+    <div id="server-view" class="hidden">
+
+      <div id="server-header">
+        <div id="server-header-left">
+          <h1 id="sv-name">Server Name</h1>
+          <div id="sv-meta">
+            <span id="sv-type-badge" class="badge badge-type">vanilla</span>
+            <span id="sv-status-badge" class="badge badge-status stopped">stopped</span>
+            <span id="sv-version" class="dim">1.20.4</span>
+          </div>
+        </div>
+        <div id="server-header-right">
+          <button id="btn-start"   class="btn-success">&#9654; Start</button>
+          <button id="btn-stop"    class="btn-danger"  disabled>&#9632; Stop</button>
+          <button id="btn-restart" class="btn-warning" disabled>&#8635; Restart</button>
+          <button id="btn-kill"    class="btn-ghost"   disabled title="Force kill process">&#9760; Kill</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div id="tabs">
+        <button class="tab active" data-tab="console">Console</button>
+        <button class="tab"        data-tab="properties">Properties</button>
+        <button class="tab"        data-tab="files">Files</button>
+        <button class="tab"        data-tab="settings">Settings</button>
+      </div>
+
+      <!-- Console Panel -->
+      <div id="panel-console" class="tab-panel active">
+        <div id="console-output"></div>
+        <div id="console-input-row">
+          <span class="console-prompt">&gt;</span>
+          <input id="console-input" type="text" placeholder="Enter command..." autocomplete="off" spellcheck="false">
+          <button id="btn-send">Send</button>
+        </div>
+      </div>
+
+      <!-- Properties Panel -->
+      <div id="panel-properties" class="tab-panel hidden">
+        <div id="props-toolbar">
+          <span class="props-hint">Changes take effect on next restart.</span>
+          <button id="btn-save-props" class="btn-primary">Save Properties</button>
+        </div>
+        <div id="props-common"></div>
+        <details id="props-all-details" open>
+          <summary>All Properties</summary>
+          <div id="props-all"></div>
+        </details>
+      </div>
+
+      <!-- Files Panel -->
+      <div id="panel-files" class="tab-panel hidden">
+        <div id="files-breadcrumb"></div>
+        <div id="files-list"></div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="panel-settings" class="tab-panel hidden">
+        <div class="settings-form">
+          <label>Display Name
+            <input type="text" id="set-name" placeholder="My Server">
+          </label>
+          <label>Server Path (read-only)
+            <input type="text" id="set-path" readonly>
+          </label>
+          <div class="form-row">
+            <label>Server Type
+              <select id="set-type">
+                <option value="vanilla">vanilla</option>
+                <option value="forge">forge</option>
+                <option value="fabric">fabric</option>
+                <option value="neoforge">neoforge</option>
+                <option value="paper">paper</option>
+                <option value="purpur">purpur</option>
+                <option value="spigot">spigot</option>
+                <option value="bukkit">bukkit</option>
+                <option value="sponge">sponge</option>
+                <option value="unknown">unknown</option>
+              </select>
+            </label>
+            <label>Detected Version
+              <input type="text" id="set-version" placeholder="1.20.4">
+            </label>
+          </div>
+          <label>Jar File
+            <div class="jar-row">
+              <input type="text" id="set-jar" placeholder="server.jar">
+              <button id="btn-refresh-jars" class="btn-ghost btn-small">&#8635; Refresh</button>
+            </div>
+            <select id="set-jar-picker" size="4"></select>
+          </label>
+          <label>Java Path
+            <input type="text" id="set-java" placeholder="java (must be in PATH, or give full path)">
+          </label>
+          <div class="form-row">
+            <label>Min RAM (MB)
+              <input type="number" id="set-min-ram" min="128" step="128" placeholder="512">
+            </label>
+            <label>Max RAM (MB)
+              <input type="number" id="set-max-ram" min="256" step="256" placeholder="1024">
+            </label>
+          </div>
+          <label>Extra JVM Args
+            <input type="text" id="set-jvm-args" placeholder="-XX:+UseG1GC -XX:+ParallelRefProcEnabled">
+          </label>
+          <div class="settings-actions">
+            <button id="btn-save-settings" class="btn-primary">Save Settings</button>
+          </div>
+          <div class="danger-zone">
+            <h3>Danger Zone</h3>
+            <p>Remove this server from the manager. Your server files are NOT deleted.</p>
+            <button id="btn-remove-server" class="btn-danger">Remove from Manager</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /server-view -->
+  </main>
+</div><!-- /app -->
+
+<!-- ============================================================
+     ADD SERVER MODAL
+============================================================ -->
+<div id="modal-overlay" class="hidden" onclick="modalOverlayClick(event)">
+  <div id="modal-add">
+    <div class="modal-header">
+      <h2>Add Server</h2>
+      <button class="modal-close" onclick="hideAddModal()">&#10005;</button>
+    </div>
+
+    <div id="modal-tabs">
+      <button class="modal-tab active" data-mtab="attach">Attach Existing</button>
+      <button class="modal-tab"        data-mtab="create">Create New</button>
+    </div>
+
+    <!-- Attach tab -->
+    <div id="mtab-attach" class="modal-panel active">
+      <div class="form-group">
+        <label>Server Folder Path
+          <input type="text" id="at-path" placeholder="/home/minecraft/server  or  C:\servers\my-server">
+        </label>
+        <button id="btn-detect" class="btn-secondary">Detect</button>
+      </div>
+      <div id="detect-result" class="hidden">
+        <div class="detect-row">
+          <span class="label">Type:</span> <span id="dr-type" class="badge badge-type">-</span>
+        </div>
+        <div class="detect-row">
+          <span class="label">Version:</span> <span id="dr-version">-</span>
+        </div>
+        <div class="detect-row">
+          <span class="label">Jar File:</span> <span id="dr-jar">-</span>
+        </div>
+        <div class="detect-row">
+          <span class="label">EULA:</span> <span id="dr-eula">-</span>
+        </div>
+        <div id="dr-warning" class="warning-box hidden"></div>
+      </div>
+      <hr class="divider">
+      <label>Display Name
+        <input type="text" id="at-name" placeholder="My Server">
+      </label>
+      <div class="form-row">
+        <label>Min RAM (MB)<input type="number" id="at-min-ram" value="512" min="128" step="128"></label>
+        <label>Max RAM (MB)<input type="number" id="at-max-ram" value="1024" min="256" step="256"></label>
+      </div>
+      <label>Java Path (optional)
+        <input type="text" id="at-java" placeholder="java">
+      </label>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="hideAddModal()">Cancel</button>
+        <button id="btn-attach-confirm" class="btn-primary">Add Server</button>
+      </div>
+    </div>
+
+    <!-- Create tab -->
+    <div id="mtab-create" class="modal-panel hidden">
+      <label>Server Name
+        <input type="text" id="cr-name" placeholder="My Vanilla Server">
+      </label>
+      <label>Install Path
+        <input type="text" id="cr-path" placeholder="/home/minecraft/server  or  C:\servers\my-server">
+      </label>
+      <label>Minecraft Version
+        <div class="version-row">
+          <select id="cr-version"><option>Loading...</option></select>
+          <label class="checkbox-label">
+            <input type="checkbox" id="cr-snapshots"> Snapshots
+          </label>
+        </div>
+      </label>
+      <div class="form-row">
+        <label>Min RAM (MB)<input type="number" id="cr-min-ram" value="512" min="128" step="128"></label>
+        <label>Max RAM (MB)<input type="number" id="cr-max-ram" value="1024" min="256" step="256"></label>
+      </div>
+      <label class="checkbox-label eula-label">
+        <input type="checkbox" id="cr-eula">
+        I agree to the <a href="https://aka.ms/MinecraftEULA" target="_blank">Minecraft EULA</a>
+      </label>
+      <!-- Progress section -->
+      <div id="create-progress" class="hidden">
+        <div class="progress-bar-track">
+          <div id="progress-bar-fill" class="progress-bar-fill" style="width:0%"></div>
+        </div>
+        <div id="progress-message" class="progress-message">Preparing...</div>
+      </div>
+      <div id="create-error" class="error-box hidden"></div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="hideAddModal()">Cancel</button>
+        <button id="btn-create-confirm" class="btn-primary">Create Server</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     PLAYIT CONFIG MODAL
+============================================================ -->
+<div id="modal-playit-overlay" class="hidden" onclick="playitModalOverlayClick(event)">
+  <div id="modal-playit">
+    <div class="modal-header">
+      <h2>playit.gg Config</h2>
+      <button class="modal-close" onclick="hidePlayitModal()">&#10005;</button>
+    </div>
+    <label>playit Binary Path
+      <input type="text" id="pl-path" placeholder="playit  (or full path)">
+    </label>
+    <label>Secret Key (optional)
+      <input type="text" id="pl-secret" placeholder="Leave blank for first-time setup">
+    </label>
+    <p class="dim small">
+      Download playit from <a href="https://playit.gg/download" target="_blank">playit.gg/download</a>.
+      On first run (no secret key), a claim URL will appear in the sidebar.
+    </p>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="hidePlayitModal()">Cancel</button>
+      <button id="btn-playit-save" class="btn-primary" onclick="savePlayitConfig()">Save & Start</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
