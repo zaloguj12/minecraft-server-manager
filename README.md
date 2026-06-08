@@ -25,7 +25,7 @@ A lightweight, web-based Minecraft server manager. Point it at an existing serve
 
 ## Screenshots
 
-> TODO: add screenshots here
+![screenshot of the main page](screenshots/main-page.png)
 
 ---
 
