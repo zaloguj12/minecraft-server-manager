@@ -67,13 +67,17 @@ app.post('/api/servers', (req, res) => {
     const server = serverManager.add({
       name,
       serverPath,
-      type:     detected.type,
-      version:  detected.version,
-      jarFile:  detected.jarFile,
-      minRam:   req.body.minRam   || 512,
-      maxRam:   req.body.maxRam   || 1024,
-      javaPath: req.body.javaPath || 'java',
-      javaArgs: req.body.javaArgs || ''
+      type:          detected.type,
+      version:       detected.version,
+      jarFile:       detected.jarFile,
+      // Use explicitly supplied script, or fall back to auto-detected one
+      startupScript: req.body.startupScript !== undefined
+                       ? (req.body.startupScript || null)
+                       : (detected.scriptFile || null),
+      minRam:        req.body.minRam   || 512,
+      maxRam:        req.body.maxRam   || 1024,
+      javaPath:      req.body.javaPath || 'java',
+      javaArgs:      req.body.javaArgs || ''
     });
 
     res.json({ server: { ...server, status: 'stopped' } });
@@ -254,6 +258,13 @@ app.post('/api/list-jars', (req, res) => {
   res.json({ jars: serverDetector.listJars(serverPath) });
 });
 
+// --- List startup scripts in a directory ---
+app.post('/api/list-scripts', (req, res) => {
+  const { serverPath } = req.body;
+  if (!serverPath) return res.status(400).json({ error: 'serverPath is required' });
+  res.json({ scripts: serverDetector.listScripts(serverPath) });
+});
+
 // --- Minecraft version list ---
 app.get('/api/minecraft/versions', async (req, res) => {
   try {
@@ -286,13 +297,14 @@ app.post('/api/minecraft/create', (req, res) => {
     if (result.success) {
       const server = serverManager.add({
         name, serverPath,
-        type:     'vanilla',
+        type:          'vanilla',
         version,
-        jarFile:  result.jarFile,
-        minRam:   Number(minRam) || 512,
-        maxRam:   Number(maxRam) || 1024,
-        javaPath: 'java',
-        javaArgs: ''
+        jarFile:       result.jarFile,
+        startupScript: null,
+        minRam:        Number(minRam) || 512,
+        maxRam:        Number(maxRam) || 1024,
+        javaPath:      'java',
+        javaArgs:      ''
       });
       broadcast({ type: 'creation_done', tempId, server: { ...server, status: 'stopped' } });
     }

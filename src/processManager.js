@@ -1,6 +1,7 @@
 'use strict';
 
 const { spawn } = require('child_process');
+const path      = require('path');
 const EventEmitter = require('events');
 
 const CONSOLE_BUFFER_SIZE = 500; // Lines kept per server
@@ -14,7 +15,16 @@ class ProcessManager extends EventEmitter {
 
   // ------------------------------------------------------------------
   // Start a server process
-  // config: { serverPath, javaPath, jarFile, minRam, maxRam, javaArgs }
+  // config: { serverPath, javaPath, jarFile, startupScript,
+  //           minRam, maxRam, javaArgs }
+  //
+  // Launch priority:
+  //   1. If startupScript is set -> run the script (ignores jar/java/RAM)
+  //   2. Otherwise              -> java -jar <jarFile>
+  //
+  // Script rules:
+  //   Windows + .bat/.cmd  ->  cmd /c <script>
+  //   anything else        ->  bash <script>   (covers .sh on any OS)
   // ------------------------------------------------------------------
   start(id, config) {
     const existing = this.processes.get(id);
@@ -24,48 +34,76 @@ class ProcessManager extends EventEmitter {
 
     const {
       serverPath,
-      javaPath = 'java',
+      javaPath     = 'java',
       jarFile,
-      minRam = 512,
-      maxRam = 1024,
-      javaArgs = ''
+      startupScript = null,
+      minRam        = 512,
+      maxRam        = 1024,
+      javaArgs      = ''
     } = config;
 
-    if (!jarFile) throw new Error('No jar file configured for this server');
+    let proc;
+    let launchDesc;
 
-    // Build JVM argument list
-    const args = [`-Xms${minRam}M`, `-Xmx${maxRam}M`];
-    if (javaArgs && javaArgs.trim()) {
-      args.push(...javaArgs.trim().split(/\s+/).filter(Boolean));
+    if (startupScript) {
+      // ---- Script mode ----
+      const isWindows = process.platform === 'win32';
+      const ext       = path.extname(startupScript).toLowerCase();
+
+      let cmd, args;
+      if (isWindows && (ext === '.bat' || ext === '.cmd')) {
+        cmd  = 'cmd';
+        args = ['/c', startupScript];
+      } else {
+        // .sh on any platform, or unknown extension -> try bash
+        cmd  = 'bash';
+        args = [startupScript];
+      }
+
+      launchDesc = `${cmd} ${args.join(' ')}`;
+      proc = spawn(cmd, args, {
+        cwd:   serverPath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        shell: false
+      });
+    } else {
+      // ---- Jar mode (original) ----
+      if (!jarFile) throw new Error('No jar file configured for this server');
+
+      const jvmArgs = [`-Xms${minRam}M`, `-Xmx${maxRam}M`];
+      if (javaArgs && javaArgs.trim()) {
+        jvmArgs.push(...javaArgs.trim().split(/\s+/).filter(Boolean));
+      }
+      jvmArgs.push('-jar', jarFile, '--nogui');
+
+      launchDesc = `${javaPath} ${jvmArgs.join(' ')}`;
+      proc = spawn(javaPath, jvmArgs, {
+        cwd:   serverPath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        shell: false
+      });
     }
-    args.push('-jar', jarFile, '--nogui');
-
-    const proc = spawn(javaPath, args, {
-      cwd: serverPath,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: false
-    });
 
     // Reuse existing entry (keeps subscribers and old buffer) or create fresh
     const entry = existing || {
       subscribers: new Set(),
-      buffer: [],
-      status: 'stopped',
-      proc: null,
-      startTime: null
+      buffer:      [],
+      status:      'stopped',
+      proc:        null,
+      startTime:   null
     };
 
-    entry.proc = proc;
-    entry.buffer = [];
-    entry.status = 'starting';
+    entry.proc      = proc;
+    entry.buffer    = [];
+    entry.status    = 'starting';
     entry.startTime = Date.now();
 
     this.processes.set(id, entry);
-    this._broadcast(id, `[MSM] Starting server: java ${args.join(' ')}`);
+    this._broadcast(id, `[MSM] Starting server: ${launchDesc}`);
 
     // Handle stdout and stderr identically
     const handleData = (data) => {
-      const text = data.toString();
+      const text  = data.toString();
       const lines = text.split('\n');
       for (const raw of lines) {
         const line = raw.replace(/\r/g, '');
@@ -95,11 +133,11 @@ class ProcessManager extends EventEmitter {
     proc.stderr.on('data', handleData);
 
     proc.on('error', (err) => {
-      const msg = `[MSM] Failed to launch Java: ${err.message}`;
+      const msg = `[MSM] Failed to launch process: ${err.message}`;
       entry.buffer.push(msg);
       this._broadcast(id, msg);
       entry.status = 'crashed';
-      entry.proc = null;
+      entry.proc   = null;
       this.emit('statusChange', id, 'crashed');
     });
 
@@ -109,7 +147,7 @@ class ProcessManager extends EventEmitter {
       this._broadcast(id, msg);
       // Only mark as crashed if it wasn't a clean stop
       entry.status = (code === 0 || entry.status === 'stopping') ? 'stopped' : 'crashed';
-      entry.proc = null;
+      entry.proc   = null;
       this.emit('statusChange', id, entry.status);
     });
 
@@ -166,11 +204,11 @@ class ProcessManager extends EventEmitter {
   subscribe(id, ws) {
     if (!this.processes.has(id)) {
       this.processes.set(id, {
-        proc: null,
+        proc:        null,
         subscribers: new Set(),
-        buffer: [],
-        status: 'stopped',
-        startTime: null
+        buffer:      [],
+        status:      'stopped',
+        startTime:   null
       });
     }
     const entry = this.processes.get(id);
