@@ -1,220 +1,254 @@
-# Minecraft Server Manager (MSM)
+# Minecraft Server Manager
 
-A self-hosted, web-based tool for managing Minecraft server processes.
-Built with Node.js, Express, WebSockets, and a vanilla JS/HTML/CSS frontend (no build step required).
+A lightweight, web-based Minecraft server manager. Point it at an existing server folder and it attaches automatically, or let it create a brand-new vanilla server from scratch. No Docker, no Java wrappers, no bloat — just Node.js and a browser.
 
-Licensed under CC BY-NC 4.0.
+![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)
+![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue)
 
 ---
 
 ## Features
 
-- Attach existing server folders with auto-detection of type, version, and jar file
-- Create new vanilla servers by downloading directly from Mojang
-- Start, stop, restart, and force-kill server processes
-- Live console output via WebSocket with command input
-- Edit server.properties from the browser
-- File browser for the server directory
-- Startup script support (run.sh, run.bat, etc.) as an alternative to direct jar invocation
-- playit.gg tunnel integration for easy port forwarding
-- Persistent server configs saved to data/servers.json
-- Supports: Vanilla, Forge, Fabric, NeoForge, Paper, Spigot, Bukkit, Purpur, Sponge
+- **Attach to any existing server** — paste a folder path, hit Detect, and it reads the jar to figure out the type automatically
+- **Create vanilla servers** — picks any release or snapshot from Mojang's API and downloads the jar for you
+- **Works with modded and plugin servers** — Forge, Fabric, NeoForge, Paper, Spigot, Bukkit, Purpur, Sponge
+- **Startup script support** — run `run.sh` or `run.bat` instead of a jar file, ideal for Forge and Fabric installs
+- **Real-time console** — WebSocket-powered terminal with command input and scrollback buffer
+- **Properties editor** — edit `server.properties` through a form, common settings shown prominently
+- **File browser** — navigate your server directory from the web interface
+- **Per-server settings** — RAM allocation, Java path, extra JVM flags, jar file selection, startup script
+- **playit.gg integration** — start a playit tunnel from the sidebar, see the tunnel address and claim URL live
+- **Windows and Linux** — no platform-specific dependencies
+- **No build step** — vanilla HTML/CSS/JS frontend, runs straight from `node server.js`
+
+---
+
+## Screenshots
+
+![screenshot of the main page](screenshots/main-page.png)
 
 ---
 
 ## Requirements
 
-- Node.js 18 or newer
-- Java installed and in PATH (or specify a custom path per server)
-- Windows or Linux
+- [Node.js](https://nodejs.org/) >= 18
+- [Java](https://adoptium.net/) (any version your server needs, must be in PATH or set manually per server)
+- A Minecraft server folder, or an internet connection to download one
 
 ---
 
-## Quick Start
+## Installation
 
-1. Clone or download the project.
+```powershell
+git clone https://github.com/zaloguj12/minecraft-server-manager.git
+cd minecraft-server-manager
+npm install
+npm start
+```
 
-2. Install dependencies:
+Then open `http://localhost:8080` in your browser.
 
-   npm install
+To use a different port:
 
-3. Start the manager:
+```powershell
+$env:PORT = 9000; node server.js
+```
 
-   node server.js
+On Linux:
 
-4. Open your browser at:
-
-   http://localhost:8080
-
----
-
-## Adding a Server
-
-### Attach Existing Server
-
-1. Click "+ Add Server" in the sidebar.
-2. Paste the full path to your server folder.
-3. Click "Detect" to auto-detect the server type, version, jar file, and any startup scripts.
-4. Enter a display name and adjust RAM/Java settings if needed.
-5. Click "Add Server".
-
-### Create New Vanilla Server
-
-1. Click "+ Add Server" in the sidebar.
-2. Switch to the "Create New" tab.
-3. Choose an install path, Minecraft version, and RAM.
-4. Accept the EULA and click "Create Server".
-   MSM will download the server jar and configure it automatically.
+```bash
+PORT=9000 node server.js
+```
 
 ---
 
-## Startup Scripts
+## Usage
 
-Many server distributions (Forge, Fabric, NeoForge, etc.) ship with a startup script
-(run.sh on Linux, run.bat on Windows) that contains JVM flags tuned for that loader.
-MSM supports using these scripts directly instead of a jar file.
+### Attaching an existing server
 
-### How it works
+1. Click **+ Add Server** in the sidebar
+2. Select the **Attach Existing** tab
+3. Paste the full path to your server folder (e.g. `C:\servers\my-smp` or `/home/minecraft/server`)
+4. Click **Detect** — it will read the folder and identify the server type, version, jar file, and any startup scripts
+5. Set a display name and RAM limits, then click **Add Server**
 
-When a startup script is configured for a server, MSM runs the script instead of
-invoking `java -jar` directly. This means:
+### Creating a new vanilla server
 
-- The RAM (Min/Max) and Extra JVM Args fields in Settings are ignored at launch.
-  All memory and flag tuning should be done inside the script itself.
-- The Jar File field is still stored, but is not used during startup.
-- On Windows, .bat and .cmd scripts are run via: cmd /c <script>
-- On all platforms, .sh scripts are run via: bash <script>
-- The working directory is always set to the server folder, so relative paths
-  inside the script resolve correctly.
+1. Click **+ Add Server** in the sidebar
+2. Select the **Create New** tab
+3. Choose a Minecraft version from the dropdown (snapshots optional)
+4. Set a name, install path, and RAM
+5. Accept the EULA and click **Create Server**
 
-### Setting a startup script
+The jar is downloaded directly from Mojang's API. A progress bar updates in real time.
 
-After attaching a server:
+### Startup scripts
 
-1. Go to the server's Settings tab.
-2. Under "Startup Script", either:
-   - Type the script filename directly (e.g. run.sh), or
-   - Click "Refresh" to list all .sh/.bat/.cmd files found in the server folder
-     and click one to select it.
-3. Click "Save Settings".
+Many server distributions (Forge, Fabric, NeoForge) generate a startup script — `run.sh` on Linux or `run.bat` on Windows — that contains JVM flags tuned for that loader. MSM can run these scripts directly instead of invoking `java -jar` itself.
+
+**Setting a startup script:**
+
+1. Open the server's **Settings** tab
+2. Under **Startup Script**, type the filename (e.g. `run.sh`) or click **Refresh** to pick from a list of scripts found in the server folder
+3. Click **Save Settings**
 
 To go back to jar mode, clear the Startup Script field and save.
 
-### Auto-detection on attach
+**How it works:**
 
-When you run "Detect" in the Attach modal, MSM will also look for common startup
-script names in priority order:
+| Script type | Command used |
+|-------------|--------------|
+| `.bat` / `.cmd` on Windows | `cmd /c <script>` |
+| `.sh` on any platform | `bash <script>` |
 
-  Linux/Mac preference:   run.sh, start.sh, launch.sh, run.bat, ...
-  Windows preference:     run.bat, run.cmd, start.bat, start.cmd, run.sh, ...
+The working directory is always the server folder, so relative paths inside the script resolve correctly.
 
-If a script is found, it is shown in the detection result and automatically
-associated with the server when you click "Add Server". You can always change
-or clear it later in Settings.
+When a startup script is set, the **Min RAM**, **Max RAM**, and **Extra JVM Args** fields are ignored — all memory and flag tuning should be done inside the script itself.
 
-### Notes for specific server types
+**Auto-detection on attach:**
 
-- Forge and NeoForge: these loaders generate run.bat / run.sh automatically
-  after first install. Use those scripts for best compatibility.
-- Fabric: the fabric-server-launch.jar can be launched directly as the jar file,
-  but a run.sh is also generated by the Fabric installer and works fine.
-- Paper/Purpur/Spigot: these work fine with direct jar invocation, but you can
-  use a script if you prefer custom flags.
+When you click Detect, MSM also looks for common script names in the server folder. If one is found it appears in the detection result and is automatically associated when you click **Add Server**. You can change or clear it any time in Settings.
 
----
+Scripts are detected in this priority order:
 
-## Server Settings
+| Platform | Priority order |
+|----------|---------------|
+| Linux / Mac | `run.sh`, `start.sh`, `launch.sh`, then `.bat`/`.cmd` variants |
+| Windows | `run.bat`, `run.cmd`, `start.bat`, `start.cmd`, then `.sh` variants |
 
-Each server has the following configuration:
+**Notes by server type:**
 
-  Field            Description
-  ----             -----------
-  Display Name     Label shown in the sidebar
-  Server Path      Absolute path to the server folder (read-only after attach)
-  Server Type      vanilla / forge / fabric / neoforge / paper / etc.
-  Version          Detected or manually entered Minecraft version
-  Jar File         The .jar to launch (used when no startup script is set)
-  Startup Script   Script to run instead of java -jar (see above)
-  Java Path        Path to the java binary (default: "java" from PATH)
-  Min RAM (MB)     -Xms value passed to JVM (ignored when using a startup script)
-  Max RAM (MB)     -Xmx value passed to JVM (ignored when using a startup script)
-  Extra JVM Args   Additional flags (ignored when using a startup script)
+- **Forge / NeoForge** — generates `run.bat` / `run.sh` after first install; use those for best compatibility
+- **Fabric** — the installer generates a `run.sh`; works fine as the startup script
+- **Paper / Purpur / Spigot** — direct jar invocation works well, but a script is supported if you prefer custom flags
+- **Vanilla** — no script is generated; use jar mode
 
----
+### Supported server types
 
-## API Reference
+| Type | Detected by |
+|------|-------------|
+| Vanilla | jar name contains `minecraft_server` or `server` |
+| Forge | jar name contains `forge` |
+| Fabric | jar name contains `fabric-server` or `fabric-loader` |
+| NeoForge | jar name contains `neoforge` |
+| Paper | jar name contains `paper` |
+| Purpur | jar name contains `purpur` |
+| Spigot | jar name contains `spigot` |
+| Bukkit / CraftBukkit | jar name contains `bukkit` or `craftbukkit` |
+| Sponge | jar name contains `sponge` |
 
-All endpoints accept and return JSON.
+If the type can't be determined from the jar name, it falls back to checking whether a `mods/` or `plugins/` folder exists.
 
-  Method   Path                              Description
-  ------   ----                              -----------
-  GET      /api/servers                      List all servers
-  POST     /api/servers                      Attach a server folder
-  GET      /api/servers/:id                  Get one server
-  PUT      /api/servers/:id                  Update server config
-  DELETE   /api/servers/:id                  Remove from manager
-  POST     /api/servers/:id/start            Start the server
-  POST     /api/servers/:id/stop             Graceful stop (sends "stop" to stdin)
-  POST     /api/servers/:id/kill             Force-kill the process
-  POST     /api/servers/:id/restart          Stop then start
-  GET      /api/servers/:id/status           Get current status string
-  GET      /api/servers/:id/properties       Read server.properties
-  PUT      /api/servers/:id/properties       Write server.properties
-  GET      /api/servers/:id/files?dir=       Browse server directory
-  POST     /api/detect                       Detect server without attaching
-  POST     /api/list-jars                    List .jar files in a directory
-  POST     /api/list-scripts                 List .sh/.bat/.cmd files in a directory
-  GET      /api/minecraft/versions           Fetch Mojang version manifest
-  POST     /api/minecraft/create             Create a new vanilla server
-  GET      /api/playit/status                Get playit.gg tunnel status
-  POST     /api/playit/start                 Start playit.gg
-  POST     /api/playit/stop                  Stop playit.gg
+### playit.gg tunnels
 
-### WebSocket endpoints
+[playit.gg](https://playit.gg) lets you expose your server to the internet without port forwarding.
 
-  ws://host/ws/console/:id        Live console output; send text to run commands
-  ws://host/ws/notifications      Server status changes, playit status, creation progress
+1. Download the playit binary from [playit.gg/download](https://playit.gg/download)
+2. Click **Config** in the playit widget at the bottom of the sidebar
+3. Set the path to the binary and optionally a secret key
+4. Click **Save & Start**
 
-### Attaching a server (POST /api/servers)
-
-  {
-    "name":          "My Server",
-    "serverPath":    "C:\\servers\\my-server",
-    "startupScript": "run.bat",     <- optional, null to use jar mode
-    "minRam":        512,
-    "maxRam":        1024,
-    "javaPath":      "java",
-    "javaArgs":      ""
-  }
-
-### Listing scripts (POST /api/list-scripts)
-
-  Request:  { "serverPath": "C:\\servers\\my-server" }
-  Response: { "scripts": ["run.bat", "run.sh"] }
+On first run (no secret key), a claim URL appears in the sidebar. Open it to link the tunnel to your account. Once claimed, your tunnel address appears automatically.
 
 ---
 
 ## Project Structure
 
-  minecraft-server-manager/
-  |-- server.js              Express + WebSocket entry point
-  |-- src/
-  |   |-- serverManager.js   Persistent server config store (data/servers.json)
-  |   |-- processManager.js  Child process lifecycle and console streaming
-  |   |-- serverDetector.js  Auto-detect type/jar/script, read/write properties
-  |   |-- serverCreator.js   Download and set up vanilla servers from Mojang
-  |   |-- playitManager.js   playit.gg tunnel process manager
-  |-- public/
-  |   |-- index.html         Single-page app shell
-  |   |-- app.js             All frontend logic
-  |   |-- style.css          Styles
-  |-- data/
-  |   |-- servers.json       Persisted server configs (auto-created)
-  |-- _docs/                 Internal session notes (excluded from git)
+```
+minecraft-server-manager/
+|-- server.js               Express + WebSocket server, all REST and WS routes
+|-- package.json
+|-- .gitignore
+|
+|-- src/
+|   |-- serverManager.js    CRUD for server configs stored in data/servers.json
+|   |-- serverDetector.js   Detects server type/jar/script from folder, reads/writes server.properties
+|   |-- serverCreator.js    Downloads vanilla server jars from Mojang's API
+|   |-- processManager.js   Spawns and manages Java/script processes, WebSocket console broadcast
+|   `-- playitManager.js    Manages the playit.gg subprocess and parses its output
+|
+|-- public/
+|   |-- index.html          SPA shell
+|   |-- style.css           Dark theme
+|   `-- app.js              All frontend logic (vanilla JS, no framework)
+|
+`-- data/                   Auto-created at runtime, excluded from git
+    `-- servers.json        Persisted server configs
+```
+
+---
+
+## API Reference
+
+All endpoints return JSON.
+
+### Servers
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/servers` | List all servers with live status |
+| POST | `/api/servers` | Attach an existing server |
+| GET | `/api/servers/:id` | Get a single server |
+| PUT | `/api/servers/:id` | Update server config |
+| DELETE | `/api/servers/:id` | Remove from manager (no files deleted) |
+| POST | `/api/servers/:id/start` | Start the server |
+| POST | `/api/servers/:id/stop` | Graceful stop (sends `stop` command) |
+| POST | `/api/servers/:id/kill` | Force kill (SIGTERM) |
+| POST | `/api/servers/:id/restart` | Graceful restart |
+| GET | `/api/servers/:id/properties` | Read `server.properties` |
+| PUT | `/api/servers/:id/properties` | Write `server.properties` |
+| GET | `/api/servers/:id/files` | Browse server directory (`?dir=relative/path`) |
+
+### Utilities
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/detect` | Detect server type from a path without adding it |
+| POST | `/api/list-jars` | List `.jar` files in a directory (`{ serverPath }`) |
+| POST | `/api/list-scripts` | List `.sh`/`.bat`/`.cmd` files in a directory (`{ serverPath }`) |
+| GET | `/api/minecraft/versions` | List Minecraft versions from Mojang (`?snapshots=true`) |
+| POST | `/api/minecraft/create` | Create a new vanilla server (async, progress via WebSocket) |
+
+### playit.gg
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/playit/status` | Current status, tunnels, and claim URL |
+| POST | `/api/playit/start` | Start playit (`{ playitPath, secretKey }`) |
+| POST | `/api/playit/stop` | Stop playit |
+
+### WebSocket
+
+| Channel | Description |
+|---------|-------------|
+| `ws://host/ws/console/:serverId` | Bidirectional — server pushes log lines, client sends commands |
+| `ws://host/ws/notifications` | Server pushes status change events and creation progress |
+
+---
+
+## Configuration
+
+There is no config file. Everything is set per server through the Settings tab in the UI.
+
+The only global option is the port, set via the `PORT` environment variable (default: `8080`).
+
+Server configs are persisted automatically to `data/servers.json` which is created on first run.
+
+---
+
+## Known Limitations
+
+- File browser is read-only (navigation only, no editing)
+- No player list, ops, or whitelist management UI
+- No scheduled tasks or auto-restart on crash
+- No backup management
+- No authentication — intended for local or LAN use only
+- No HTTPS — run behind a reverse proxy (nginx, Caddy) if you need remote access
+- Running `.sh` scripts on Windows requires `bash` in PATH (e.g. Git Bash or WSL)
 
 ---
 
 ## License
 
-CC BY-NC 4.0 - Creative Commons Attribution-NonCommercial 4.0 International
-https://creativecommons.org/licenses/by-nc/4.0/
+[CC BY-NC 4.0](LICENSE) — free to use and modify for non-commercial purposes, with attribution.
