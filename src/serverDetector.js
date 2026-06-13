@@ -18,9 +18,17 @@ const TYPE_PATTERNS = [
   { type: 'vanilla',  patterns: ['minecraft_server', 'server'] }
 ];
 
+// Preferred script names, platform-appropriate order.
+// Windows prefers .bat/.cmd first; Linux/Mac prefers .sh first.
+const SCRIPT_NAMES_WIN  = ['run.bat', 'run.cmd', 'start.bat', 'start.cmd', 'launch.bat', 'launch.cmd', 'run.sh', 'start.sh', 'launch.sh'];
+const SCRIPT_NAMES_UNIX = ['run.sh', 'start.sh', 'launch.sh', 'run.bat', 'run.cmd', 'start.bat', 'start.cmd', 'launch.bat', 'launch.cmd'];
+
 // ============================================================
-// Detect server type + jar in a given folder
-// Returns: { valid, type, version, jarFile, eulaAccepted, warning, error }
+// Detect server type + jar + startup script in a given folder
+// Returns: { valid, type, version, jarFile, scriptFile, eulaAccepted, warning, error }
+//
+// scriptFile  - filename of the first recognised startup script found,
+//               or null if none present. Prefer platform-native extension.
 // ============================================================
 function detect(serverPath) {
   // Existence check
@@ -40,7 +48,8 @@ function detect(serverPath) {
     return { valid: false, error: `Cannot read directory: ${err.message}` };
   }
 
-  const jars = files.filter(f => f.toLowerCase().endsWith('.jar'));
+  const filesLower = files.map(f => f.toLowerCase());
+  const jars       = files.filter(f => f.toLowerCase().endsWith('.jar'));
 
   // Folder structure hints
   const hasMods    = files.some(f => f === 'mods'    && isDir(serverPath, f));
@@ -55,18 +64,31 @@ function detect(serverPath) {
     } catch (_) {}
   }
 
+  // Detect startup script (platform-preferred order)
+  const scriptPriority = process.platform === 'win32' ? SCRIPT_NAMES_WIN : SCRIPT_NAMES_UNIX;
+  const scriptFile = scriptPriority.find(s => filesLower.includes(s.toLowerCase()))
+    // preserve original casing from the actual filesystem
+    ? files.find(f => scriptPriority.some(s => f.toLowerCase() === s.toLowerCase())) || null
+    : null;
+
   if (jars.length === 0) {
-    // No jars found — could be a partially set-up server
+    // No jars found — could be script-only or partially set-up
     let guessedType = 'unknown';
-    if (hasMods) guessedType = 'forge';
+    if (hasMods)    guessedType = 'forge';
     if (hasPlugins) guessedType = 'paper';
+
+    const warning = scriptFile
+      ? `No .jar file found. Startup script "${scriptFile}" detected — server can be launched via the script.`
+      : 'No .jar file found in this directory. Set the jar file manually in Settings.';
+
     return {
       valid: true,
-      type: guessedType,
+      type:  guessedType,
       version: 'unknown',
       jarFile: null,
+      scriptFile,
       eulaAccepted,
-      warning: 'No .jar file found in this directory. Set the jar file manually in Settings.'
+      warning
     };
   }
 
@@ -80,6 +102,7 @@ function detect(serverPath) {
           type,
           version: extractVersion(jar),
           jarFile: jar,
+          scriptFile,
           eulaAccepted,
           warning: null
         };
@@ -88,16 +111,17 @@ function detect(serverPath) {
   }
 
   // Fallback: use first jar but flag as unknown
-  const fallbackJar = jars[0];
-  let fallbackType = 'unknown';
-  if (hasMods) fallbackType = 'forge';
+  const fallbackJar  = jars[0];
+  let   fallbackType = 'unknown';
+  if (hasMods)    fallbackType = 'forge';
   else if (hasPlugins) fallbackType = 'paper';
 
   return {
     valid: true,
-    type: fallbackType,
+    type:    fallbackType,
     version: extractVersion(fallbackJar),
     jarFile: fallbackJar,
+    scriptFile,
     eulaAccepted,
     warning: `Could not determine server type from jar name "${fallbackJar}". Type was guessed — correct it in Settings if needed.`
   };
@@ -109,6 +133,21 @@ function detect(serverPath) {
 function listJars(serverPath) {
   try {
     return fs.readdirSync(serverPath).filter(f => f.toLowerCase().endsWith('.jar'));
+  } catch (_) {
+    return [];
+  }
+}
+
+// ============================================================
+// List all startup script files (.sh / .bat / .cmd) in a directory
+// (for the Settings script picker)
+// ============================================================
+function listScripts(serverPath) {
+  try {
+    return fs.readdirSync(serverPath).filter(f => {
+      const ext = f.toLowerCase();
+      return ext.endsWith('.sh') || ext.endsWith('.bat') || ext.endsWith('.cmd');
+    });
   } catch (_) {
     return [];
   }
@@ -193,4 +232,4 @@ function extractVersion(jarName) {
   return m ? m[1] : 'unknown';
 }
 
-module.exports = { detect, listJars, readProperties, writeProperties, readEula, writeEula };
+module.exports = { detect, listJars, listScripts, readProperties, writeProperties, readEula, writeEula };

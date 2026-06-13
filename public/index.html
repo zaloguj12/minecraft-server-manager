@@ -144,6 +144,14 @@
             </div>
             <select id="set-jar-picker" size="4"></select>
           </label>
+          <label>Startup Script
+            <div class="jar-row">
+              <input type="text" id="set-script" placeholder="run.sh or run.bat (leave blank to use jar)">
+              <button id="btn-refresh-scripts" class="btn-ghost btn-small">&#8635; Refresh</button>
+            </div>
+            <select id="set-script-picker" size="3"></select>
+            <span class="dim small">When set, the script is run instead of the Jar File + Java settings below. RAM and JVM args defined inside the script are used.</span>
+          </label>
           <label>Java Path
             <input type="text" id="set-java" placeholder="java (must be in PATH, or give full path)">
           </label>
@@ -207,10 +215,15 @@
           <span class="label">Jar File:</span> <span id="dr-jar">-</span>
         </div>
         <div class="detect-row">
+          <span class="label">Script:</span> <span id="dr-script">-</span>
+        </div>
+        <div class="detect-row">
           <span class="label">EULA:</span> <span id="dr-eula">-</span>
         </div>
         <div id="dr-warning" class="warning-box hidden"></div>
       </div>
+      <!-- Hidden: carries the detected script through to attachServer() -->
+      <input type="hidden" id="at-script-detected" value="">
       <hr class="divider">
       <label>Display Name
         <input type="text" id="at-name" placeholder="My Server">

@@ -64,22 +64,27 @@ class ServerManager {
 
   // ------------------------------------------------------------------
   // Add a new server config
-  // config: { name, serverPath, type, version, jarFile, minRam, maxRam, javaPath, javaArgs }
+  // config: { name, serverPath, type, version, jarFile, startupScript,
+  //           minRam, maxRam, javaPath, javaArgs }
+  // startupScript: filename/path of a script inside serverPath to run
+  //                instead of java -jar (e.g. "run.sh", "run.bat").
+  //                When set, jarFile/javaPath/RAM args are ignored at launch.
   // Returns the new server object with generated ID
   // ------------------------------------------------------------------
   add(config) {
     const server = {
-      id:         uuidv4(),
-      name:       config.name       || 'Unnamed Server',
-      serverPath: config.serverPath,
-      type:       config.type       || 'unknown',
-      version:    config.version    || 'unknown',
-      jarFile:    config.jarFile    || null,
-      minRam:     Number(config.minRam) || 512,
-      maxRam:     Number(config.maxRam) || 1024,
-      javaPath:   config.javaPath   || 'java',
-      javaArgs:   config.javaArgs   || '',
-      createdAt:  new Date().toISOString()
+      id:            uuidv4(),
+      name:          config.name          || 'Unnamed Server',
+      serverPath:    config.serverPath,
+      type:          config.type          || 'unknown',
+      version:       config.version       || 'unknown',
+      jarFile:       config.jarFile       || null,
+      startupScript: config.startupScript || null,
+      minRam:        Number(config.minRam)  || 512,
+      maxRam:        Number(config.maxRam)  || 1024,
+      javaPath:      config.javaPath      || 'java',
+      javaArgs:      config.javaArgs      || '',
+      createdAt:     new Date().toISOString()
     };
     this._servers.set(server.id, server);
     this._save();
@@ -94,7 +99,11 @@ class ServerManager {
     const server = this._servers.get(id);
     if (!server) throw new Error(`Server ${id} not found`);
 
-    const allowed = ['name', 'serverPath', 'type', 'version', 'jarFile', 'minRam', 'maxRam', 'javaPath', 'javaArgs'];
+    const allowed = [
+      'name', 'serverPath', 'type', 'version',
+      'jarFile', 'startupScript',
+      'minRam', 'maxRam', 'javaPath', 'javaArgs'
+    ];
     for (const key of allowed) {
       if (key in updates) {
         server[key] = (key === 'minRam' || key === 'maxRam') ? Number(updates[key]) : updates[key];

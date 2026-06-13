@@ -4,22 +4,21 @@
 // STATE
 // ============================================================
 const state = {
-  servers:       [],     // Array of server objects from the API
-  selectedId:    null,   // Currently selected server ID
-  consoleWs:     null,   // WebSocket for the selected server's console
-  notifWs:       null,   // WebSocket for notification events
-  currentDir:    '',     // Current path in the file browser
+  servers:       [],
+  selectedId:    null,
+  consoleWs:     null,
+  notifWs:       null,
+  currentDir:    '',
   playit:        { status: 'stopped', tunnels: [], claimUrl: null },
   playitConfig:  { path: 'playit', secret: '' },
-  versions:      [],     // Cached Mojang version list
-  createTempId:  null,   // Temp ID for an in-progress server creation
+  versions:      [],
+  createTempId:  null,
 };
 
 // ============================================================
 // UTILITIES
 // ============================================================
 
-// Strip ANSI colour escape codes from Minecraft server output
 function stripAnsi(str) {
   return str.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
 }
@@ -44,7 +43,7 @@ function toast(message, type = 'info', duration = 3500) {
 }
 
 function fileIcon(name, isDir) {
-  if (isDir) return '\uD83D\uDCC1'; // folder
+  if (isDir) return '\uD83D\uDCC1';
   const ext = name.split('.').pop().toLowerCase();
   const map = {
     jar: '\u2615', json: '{}', yml: '#', yaml: '#',
@@ -244,16 +243,13 @@ function selectServer(id) {
   state.selectedId = id;
   state.currentDir = '';
 
-  // Update sidebar highlights
   document.querySelectorAll('.server-item').forEach(el => {
     el.classList.toggle('active', el.dataset.id === id);
   });
 
-  // Show server view
   document.getElementById('empty-state').classList.add('hidden');
   document.getElementById('server-view').classList.remove('hidden');
 
-  // Populate header
   document.getElementById('sv-name').textContent = server.name;
   const typeBadge = document.getElementById('sv-type-badge');
   typeBadge.textContent = server.type;
@@ -264,10 +260,7 @@ function selectServer(id) {
   updateStatusBadge(server.status || 'stopped');
   updateActionButtons(server.status || 'stopped');
 
-  // Connect console WebSocket
   connectConsole(id);
-
-  // Default to console tab
   switchTab('console');
 }
 
@@ -353,7 +346,6 @@ function appendConsoleLine(line) {
   el.textContent = clean;
   output.appendChild(el);
 
-  // Keep memory sane — cap at 2000 lines
   while (output.children.length > 2000) {
     output.removeChild(output.firstChild);
   }
@@ -377,7 +369,6 @@ function sendCommand() {
 // PROPERTIES
 // ============================================================
 
-// Prominent properties shown at the top of the Properties tab
 const COMMON_PROPS = [
   { key: 'server-port',  label: 'Port',        type: 'number' },
   { key: 'max-players',  label: 'Max Players',  type: 'number' },
@@ -416,7 +407,7 @@ function makeFieldEl(key, val, type, options) {
     cb.id     = `prop-${key}`;
     cb.checked = val === 'true';
     const lbl = document.createElement('label');
-    lbl.htmlFor   = `prop-${key}`;
+    lbl.htmlFor     = `prop-${key}`;
     lbl.textContent = COMMON_PROPS.find(p => p.key === key)?.label || key;
     wrapper.appendChild(cb);
     wrapper.appendChild(lbl);
@@ -458,7 +449,6 @@ function renderProperties(props) {
   commonDiv.innerHTML = '';
   allDiv.innerHTML = '';
 
-  // Common grid
   const grid = document.createElement('div');
   grid.className = 'props-grid';
   for (const def of COMMON_PROPS) {
@@ -467,7 +457,6 @@ function renderProperties(props) {
   }
   commonDiv.appendChild(grid);
 
-  // All other properties
   const restGrid = document.createElement('div');
   restGrid.className = 'props-grid';
   restGrid.style.marginTop = '10px';
@@ -478,7 +467,6 @@ function renderProperties(props) {
   }
   allDiv.appendChild(restGrid);
 
-  // Cache for save
   window._currentProps = props;
 }
 
@@ -488,7 +476,7 @@ async function saveProperties() {
   const merged = { ...window._currentProps };
 
   document.querySelectorAll('[id^="prop-"]').forEach(el => {
-    const key = el.id.slice(5); // strip "prop-"
+    const key = el.id.slice(5);
     merged[key] = el.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
   });
 
@@ -526,7 +514,6 @@ function renderFiles(data) {
   container.innerHTML = '';
   crumb.innerHTML = '';
 
-  // --- Breadcrumb ---
   const rootPart = document.createElement('span');
   rootPart.className = 'breadcrumb-part';
   rootPart.textContent = 'root';
@@ -552,7 +539,6 @@ function renderFiles(data) {
       crumb.appendChild(part);
     }
 
-    // Back row
     const parentSegments = segments.slice(0, -1);
     const parentDir = parentSegments.join('/');
     const backRow   = document.createElement('div');
@@ -562,7 +548,6 @@ function renderFiles(data) {
     container.appendChild(backRow);
   }
 
-  // --- File rows ---
   for (const f of (data.files || [])) {
     const row  = document.createElement('div');
     row.className = 'file-row';
@@ -612,12 +597,14 @@ async function loadSettings() {
   document.getElementById('set-type').value     = server.type || 'unknown';
   document.getElementById('set-version').value  = server.version !== 'unknown' ? server.version : '';
   document.getElementById('set-jar').value      = server.jarFile || '';
+  document.getElementById('set-script').value   = server.startupScript || '';
   document.getElementById('set-java').value     = server.javaPath || 'java';
   document.getElementById('set-min-ram').value  = server.minRam || 512;
   document.getElementById('set-max-ram').value  = server.maxRam || 1024;
   document.getElementById('set-jvm-args').value = server.javaArgs || '';
 
   refreshJarList();
+  refreshScriptList();
 }
 
 async function refreshJarList() {
@@ -649,22 +636,66 @@ async function refreshJarList() {
   }
 }
 
+async function refreshScriptList() {
+  const server = state.servers.find(s => s.id === state.selectedId);
+  if (!server) return;
+
+  const picker = document.getElementById('set-script-picker');
+  picker.innerHTML = '<option style="color:var(--text-muted)">Loading...</option>';
+
+  try {
+    const data = await api('POST', '/api/list-scripts', { serverPath: server.serverPath });
+    picker.innerHTML = '';
+
+    // Always show a (none) option first so the user can clear the script
+    const noneOpt = document.createElement('option');
+    noneOpt.value = '';
+    noneOpt.textContent = '(none - use jar file)';
+    if (!server.startupScript) noneOpt.selected = true;
+    picker.appendChild(noneOpt);
+
+    if (data.scripts.length === 0) {
+      const emptyOpt = document.createElement('option');
+      emptyOpt.disabled = true;
+      emptyOpt.textContent = 'No script files found in this folder';
+      picker.appendChild(emptyOpt);
+    } else {
+      for (const script of data.scripts) {
+        const opt     = document.createElement('option');
+        opt.value     = script;
+        opt.textContent = script;
+        if (script === server.startupScript) opt.selected = true;
+        picker.appendChild(opt);
+      }
+    }
+
+    picker.onchange = () => {
+      document.getElementById('set-script').value = picker.value;
+    };
+  } catch (_) {
+    picker.innerHTML = '<option style="color:var(--danger)">Failed to list scripts</option>';
+  }
+}
+
 async function saveSettings() {
   if (!state.selectedId) return;
 
-  const name    = document.getElementById('set-name').value.trim();
-  const jarFile = document.getElementById('set-jar').value.trim();
+  const name          = document.getElementById('set-name').value.trim();
+  const jarFile       = document.getElementById('set-jar').value.trim();
+  const startupScript = document.getElementById('set-script').value.trim() || null;
+
   if (!name) { toast('Display name cannot be empty', 'error'); return; }
 
   const updates = {
     name,
-    type:     document.getElementById('set-type').value,
-    version:  document.getElementById('set-version').value.trim() || 'unknown',
-    jarFile:  jarFile || null,
-    javaPath: document.getElementById('set-java').value.trim() || 'java',
-    minRam:   parseInt(document.getElementById('set-min-ram').value, 10) || 512,
-    maxRam:   parseInt(document.getElementById('set-max-ram').value, 10) || 1024,
-    javaArgs: document.getElementById('set-jvm-args').value.trim(),
+    type:          document.getElementById('set-type').value,
+    version:       document.getElementById('set-version').value.trim() || 'unknown',
+    jarFile:       jarFile || null,
+    startupScript: startupScript,
+    javaPath:      document.getElementById('set-java').value.trim() || 'java',
+    minRam:        parseInt(document.getElementById('set-min-ram').value, 10) || 512,
+    maxRam:        parseInt(document.getElementById('set-max-ram').value, 10) || 1024,
+    javaArgs:      document.getElementById('set-jvm-args').value.trim(),
   };
 
   try {
@@ -688,7 +719,7 @@ async function removeServer() {
 
   try {
     await api('DELETE', `/api/servers/${state.selectedId}`);
-    state.servers  = state.servers.filter(s => s.id !== state.selectedId);
+    state.servers    = state.servers.filter(s => s.id !== state.selectedId);
     state.selectedId = null;
     disconnectConsole();
     renderServerList();
@@ -712,7 +743,6 @@ function switchTab(name) {
   const panel = document.getElementById(`panel-${name}`);
   if (panel) panel.classList.remove('hidden');
 
-  // Lazy-load content when tab is first opened
   if (name === 'properties') loadProperties();
   if (name === 'files')      loadFiles(state.currentDir);
   if (name === 'settings')   loadSettings();
@@ -725,6 +755,7 @@ function switchTab(name) {
 function showAddModal() {
   document.getElementById('at-path').value = '';
   document.getElementById('at-name').value = '';
+  document.getElementById('at-script-detected').value = '';
   document.getElementById('detect-result').classList.add('hidden');
   document.getElementById('dr-warning').classList.add('hidden');
   document.getElementById('btn-attach-confirm').disabled = false;
@@ -770,9 +801,13 @@ async function detectServer() {
     document.getElementById('dr-type').textContent    = result.type || '-';
     document.getElementById('dr-type').style.color    = typeColor(result.type);
     document.getElementById('dr-version').textContent = result.version || '-';
-    document.getElementById('dr-jar').textContent     = result.jarFile || '(none found)';
+    document.getElementById('dr-jar').textContent     = result.jarFile    || '(none found)';
+    document.getElementById('dr-script').textContent  = result.scriptFile || '(none found)';
     document.getElementById('dr-eula').textContent    = result.eulaAccepted ? 'Accepted' : 'Not accepted';
     document.getElementById('dr-eula').style.color    = result.eulaAccepted ? 'var(--accent)' : 'var(--warning)';
+
+    // Store detected script so attachServer() can pass it along
+    document.getElementById('at-script-detected').value = result.scriptFile || '';
 
     const warnEl = document.getElementById('dr-warning');
     if (!result.valid) {
@@ -785,7 +820,6 @@ async function detectServer() {
       warnEl.classList.add('hidden');
     }
 
-    // Pre-fill display name from folder name if blank
     const nameInput = document.getElementById('at-name');
     if (!nameInput.value.trim()) {
       const parts = serverPath.replace(/\\/g, '/').split('/').filter(Boolean);
@@ -802,11 +836,12 @@ async function detectServer() {
 }
 
 async function attachServer() {
-  const serverPath = document.getElementById('at-path').value.trim();
-  const name       = document.getElementById('at-name').value.trim();
-  const minRam     = parseInt(document.getElementById('at-min-ram').value, 10) || 512;
-  const maxRam     = parseInt(document.getElementById('at-max-ram').value, 10) || 1024;
-  const javaPath   = document.getElementById('at-java').value.trim() || 'java';
+  const serverPath    = document.getElementById('at-path').value.trim();
+  const name          = document.getElementById('at-name').value.trim();
+  const minRam        = parseInt(document.getElementById('at-min-ram').value, 10) || 512;
+  const maxRam        = parseInt(document.getElementById('at-max-ram').value, 10) || 1024;
+  const javaPath      = document.getElementById('at-java').value.trim() || 'java';
+  const startupScript = document.getElementById('at-script-detected').value || null;
 
   if (!serverPath) { toast('Enter a server folder path', 'warning'); return; }
   if (!name)       { toast('Enter a display name', 'warning'); return; }
@@ -816,7 +851,9 @@ async function attachServer() {
   btn.textContent = 'Adding...';
 
   try {
-    const data = await api('POST', '/api/servers', { name, serverPath, mode: 'attach', minRam, maxRam, javaPath });
+    const data = await api('POST', '/api/servers', {
+      name, serverPath, minRam, maxRam, javaPath, startupScript
+    });
     state.servers.push({ ...data.server, status: 'stopped' });
     renderServerList();
     hideAddModal();
@@ -860,10 +897,10 @@ async function createServer() {
   const maxRam      = parseInt(document.getElementById('cr-max-ram').value, 10) || 1024;
   const acceptEula  = document.getElementById('cr-eula').checked;
 
-  if (!name)                           { toast('Enter a server name', 'warning'); return; }
-  if (!serverPath)                     { toast('Enter an install path', 'warning'); return; }
-  if (!version || version === 'Loading...') { toast('Select a Minecraft version', 'warning'); return; }
-  if (!acceptEula)                     { toast('You must accept the Minecraft EULA to continue', 'warning'); return; }
+  if (!name)                                    { toast('Enter a server name', 'warning'); return; }
+  if (!serverPath)                              { toast('Enter an install path', 'warning'); return; }
+  if (!version || version === 'Loading...')     { toast('Select a Minecraft version', 'warning'); return; }
+  if (!acceptEula)                              { toast('You must accept the Minecraft EULA to continue', 'warning'); return; }
 
   const btn    = document.getElementById('btn-create-confirm');
   btn.disabled = true;
@@ -875,7 +912,6 @@ async function createServer() {
   try {
     const data       = await api('POST', '/api/minecraft/create', { name, serverPath, version, minRam, maxRam, acceptEula });
     state.createTempId = data.tempId;
-    // Progress and completion arrive via the notifications WebSocket -> handleNotification()
   } catch (err) {
     showCreateError(err.message);
   }
@@ -1009,6 +1045,7 @@ function bindEvents() {
   document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
   document.getElementById('btn-remove-server').addEventListener('click', removeServer);
   document.getElementById('btn-refresh-jars').addEventListener('click', refreshJarList);
+  document.getElementById('btn-refresh-scripts').addEventListener('click', refreshScriptList);
 
   // Modal tabs
   document.querySelectorAll('.modal-tab').forEach(btn => {
