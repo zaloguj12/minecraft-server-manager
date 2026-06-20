@@ -1,0 +1,27 @@
+[Unit]
+Description=Minecraft Server Manager
+After=network.target
+
+[Service]
+Type=simple
+
+# Change this to the Linux user that should run MSM. Do NOT use root.
+User=YOUR_USER
+
+# Change this to the absolute path of the minecraft-server-manager folder.
+WorkingDirectory=/path/to/minecraft-server-manager
+
+# Change this to the full path of your node binary.
+# Find it with:  which node
+# If using nvm, it will look something like:
+#   /home/YOUR_USER/.nvm/versions/node/v20.0.0/bin/node
+ExecStart=/usr/bin/node server.js
+
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=msm
+
+[Install]
+WantedBy=multi-user.target
