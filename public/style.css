@@ -714,6 +714,107 @@ button:disabled { opacity: 0.35; pointer-events: none; }
 .toast-warning { background: var(--warning); color: #000; }
 
 /* ============================================================
+   FILE VIEWER MODAL
+============================================================ */
+#modal-fileview {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: min(920px, 92vw);
+  height: min(82vh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#modal-fileview .modal-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fileview-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fileview-name {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: Consolas, 'Courier New', monospace;
+  word-break: break-all;
+}
+
+.fileview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#fileview-body {
+  flex: 1;
+  overflow: auto;
+  background: #080808;
+}
+#fileview-body::-webkit-scrollbar        { width: 6px; height: 6px; }
+#fileview-body::-webkit-scrollbar-thumb  { background: #2a2a2a; border-radius: 3px; }
+#fileview-body::-webkit-scrollbar-corner { background: #080808; }
+
+.fileview-msg {
+  padding: 20px 24px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-style: italic;
+}
+.fileview-error-msg { color: var(--danger); font-style: normal; }
+
+#fileview-content {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  display: inline-block;
+  min-width: 100%;
+  padding-bottom: 16px;
+}
+
+.fv-line { display: flex; align-items: baseline; }
+.fv-line:hover { background: rgba(255,255,255,0.028); }
+
+.fv-num {
+  min-width: 3.5em;
+  padding: 0 14px 0 10px;
+  text-align: right;
+  color: #30404e;
+  user-select: none;
+  flex-shrink: 0;
+  border-right: 1px solid #1a2530;
+}
+.fv-line:hover .fv-num { color: #566070; }
+
+.fv-text {
+  padding: 0 16px;
+  white-space: pre;
+  color: #b8c4cc;
+}
+
+#fileview-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-panel);
+  font-size: 11px;
+}
+
+/* ============================================================
    ANIMATIONS
 ============================================================ */
 @keyframes pulse {

@@ -308,6 +308,33 @@
   </div>
 </div>
 
+<!-- ============================================================
+     FILE VIEWER MODAL
+============================================================ -->
+<div id="modal-fileview-overlay" class="hidden" onclick="fileViewOverlayClick(event)">
+  <div id="modal-fileview">
+    <div class="modal-header">
+      <div class="fileview-title">
+        <span id="fileview-filename" class="fileview-name"></span>
+        <span id="fileview-meta" class="dim small"></span>
+      </div>
+      <div class="fileview-actions">
+        <button id="btn-fileview-copy" class="btn-ghost btn-small" onclick="copyFileContent()" disabled>Copy</button>
+        <button class="modal-close" onclick="closeFileViewer()">&#10005;</button>
+      </div>
+    </div>
+    <div id="fileview-body">
+      <div id="fileview-loading" class="fileview-msg">Loading...</div>
+      <div id="fileview-error" class="fileview-msg fileview-error-msg hidden"></div>
+      <div id="fileview-content" class="hidden"></div>
+    </div>
+    <div id="fileview-footer">
+      <span id="fileview-linecount" class="dim small"></span>
+      <span class="dim small">Read-only</span>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
