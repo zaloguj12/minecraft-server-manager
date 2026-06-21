@@ -572,7 +572,8 @@ function renderFiles(data) {
       row.style.cursor = 'pointer';
       row.onclick = () => loadFiles(f.relativePath);
     } else {
-      row.style.cursor = 'default';
+      row.style.cursor = 'pointer';
+      row.onclick = () => openFileViewer(f.relativePath, f.name);
     }
 
     container.appendChild(row);
@@ -581,6 +582,89 @@ function renderFiles(data) {
   if (!data.files || data.files.length === 0) {
     container.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Empty directory.</span>';
   }
+}
+
+// ============================================================
+// FILE VIEWER
+// ============================================================
+
+function openFileViewer(relativePath, filename) {
+  const overlay     = document.getElementById('modal-fileview-overlay');
+  const loadingEl   = document.getElementById('fileview-loading');
+  const errorEl     = document.getElementById('fileview-error');
+  const contentEl   = document.getElementById('fileview-content');
+  const linecountEl = document.getElementById('fileview-linecount');
+  const copyBtn     = document.getElementById('btn-fileview-copy');
+
+  document.getElementById('fileview-filename').textContent = filename;
+  document.getElementById('fileview-meta').textContent     = (relativePath !== filename) ? relativePath : '';
+
+  loadingEl.classList.remove('hidden');
+  errorEl.classList.add('hidden');
+  contentEl.innerHTML = '';
+  contentEl.classList.add('hidden');
+  linecountEl.textContent = '';
+  copyBtn.disabled = true;
+  overlay._content = null;
+  overlay.classList.remove('hidden');
+
+  api('GET', `/api/servers/${state.selectedId}/files/content?path=${encodeURIComponent(relativePath)}`)
+    .then(data => {
+      loadingEl.classList.add('hidden');
+
+      if (data.content === null) {
+        errorEl.textContent = data.reason || 'Cannot display this file.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      const lines = data.content.split('\n');
+      if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+
+      for (let i = 0; i < lines.length; i++) {
+        const lineEl = document.createElement('div');
+        lineEl.className = 'fv-line';
+
+        const numEl = document.createElement('span');
+        numEl.className = 'fv-num';
+        numEl.textContent = i + 1;
+
+        const textEl = document.createElement('span');
+        textEl.className = 'fv-text';
+        textEl.textContent = lines[i];
+
+        lineEl.appendChild(numEl);
+        lineEl.appendChild(textEl);
+        contentEl.appendChild(lineEl);
+      }
+
+      linecountEl.textContent =
+        `${lines.length} line${lines.length !== 1 ? 's' : ''} \u00B7 ${formatBytes(data.size)}`;
+      contentEl.classList.remove('hidden');
+      copyBtn.disabled = false;
+      overlay._content = data.content;
+    })
+    .catch(err => {
+      loadingEl.classList.add('hidden');
+      errorEl.textContent = 'Error loading file: ' + err.message;
+      errorEl.classList.remove('hidden');
+    });
+}
+
+function closeFileViewer() {
+  document.getElementById('modal-fileview-overlay').classList.add('hidden');
+}
+
+function fileViewOverlayClick(e) {
+  if (e.target === document.getElementById('modal-fileview-overlay')) closeFileViewer();
+}
+
+function copyFileContent() {
+  const overlay = document.getElementById('modal-fileview-overlay');
+  if (!overlay._content) return;
+  navigator.clipboard.writeText(overlay._content)
+    .then(()  => toast('Copied to clipboard', 'success', 2000))
+    .catch(()  => toast('Failed to copy to clipboard', 'error', 2000));
 }
 
 // ============================================================
@@ -1060,6 +1144,13 @@ function bindEvents() {
   document.getElementById('btn-create-confirm').addEventListener('click', createServer);
   document.getElementById('cr-snapshots').addEventListener('change', function () {
     loadVersions(this.checked);
+  });
+
+  // File viewer - close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('modal-fileview-overlay').classList.contains('hidden')) {
+      closeFileViewer();
+    }
   });
 }
 

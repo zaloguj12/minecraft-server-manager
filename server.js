@@ -243,6 +243,59 @@ app.get('/api/servers/:id/files', (req, res) => {
   }
 });
 
+// --- File content viewer (read-only) ---
+app.get('/api/servers/:id/files/content', (req, res) => {
+  const s = serverManager.get(req.params.id);
+  if (!s) return res.status(404).json({ error: 'Server not found' });
+
+  const filePath = req.query.path || '';
+  const base     = path.resolve(s.serverPath);
+  const target   = path.resolve(base, filePath);
+
+  // Prevent path traversal outside server directory
+  if (!target.startsWith(base)) return res.status(403).json({ error: 'Access denied' });
+
+  try {
+    const stat = fs.statSync(target);
+    if (stat.isDirectory()) return res.status(400).json({ error: 'Path is a directory' });
+
+    // Size limit: 512 KB
+    const MAX_SIZE = 512 * 1024;
+    if (stat.size > MAX_SIZE) {
+      return res.json({
+        content: null,
+        reason: `File too large to preview (${(stat.size / 1024).toFixed(0)} KB, limit is 512 KB)`
+      });
+    }
+
+    // Known binary extensions - skip reading entirely
+    const BINARY_EXT = new Set([
+      'jar', 'zip', 'gz', 'tar', '7z', 'rar', 'bz2', 'xz',
+      'class', 'bin', 'exe', 'dll', 'so', 'dylib',
+      'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico',
+      'mp4', 'mp3', 'ogg', 'wav', 'flac',
+      'pdf', 'mca', 'nbt', 'lck'
+    ]);
+    const ext = path.extname(target).toLowerCase().slice(1);
+    if (BINARY_EXT.has(ext)) {
+      return res.json({ content: null, reason: 'Binary file - cannot display as text' });
+    }
+
+    // Read as buffer and check for null bytes (binary detection)
+    const buf      = fs.readFileSync(target);
+    const checkLen = Math.min(buf.length, 8192);
+    for (let i = 0; i < checkLen; i++) {
+      if (buf[i] === 0) {
+        return res.json({ content: null, reason: 'Binary file - cannot display as text' });
+      }
+    }
+
+    res.json({ content: buf.toString('utf8'), size: stat.size });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Detect server type without adding ---
 app.post('/api/detect', (req, res) => {
   const { serverPath } = req.body;

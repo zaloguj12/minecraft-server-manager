@@ -63,6 +63,87 @@ PORT=9000 node server.js
 
 ---
 
+## Running as a Service (Linux / systemd)
+
+To have MSM start automatically on boot, you can run it as a systemd service.
+A ready-to-use template is included at extras/msm.service.
+
+### 1. Copy the service file to systemd
+
+   sudo cp extras/msm.service /etc/systemd/system/msm.service
+
+### 2. Edit the service file
+
+   sudo nano /etc/systemd/system/msm.service
+
+You must update three fields:
+
+  User=             The Linux user that will run MSM. Do NOT use root.
+  WorkingDirectory= The absolute path to this project folder.
+  ExecStart=        The full path to your node binary, followed by server.js.
+                    Find your node path with:  which node
+
+Example of a filled-in service file:
+
+  [Unit]
+  Description=Minecraft Server Manager
+  After=network.target
+
+  [Service]
+  Type=simple
+  User=minecraft
+  WorkingDirectory=/home/minecraft/minecraft-server-manager
+  ExecStart=/usr/bin/node server.js
+  Restart=on-failure
+  RestartSec=5
+  StandardOutput=journal
+  StandardError=journal
+  SyslogIdentifier=msm
+
+  [Install]
+  WantedBy=multi-user.target
+
+### 3. Enable and start the service
+
+   sudo systemctl daemon-reload
+   sudo systemctl enable msm
+   sudo systemctl start msm
+
+MSM will now start automatically on every boot.
+
+### Checking status and logs
+
+  sudo systemctl status msm       <- current status
+  sudo journalctl -u msm -f       <- live log output
+  sudo journalctl -u msm -n 100   <- last 100 log lines
+
+### Stopping and disabling
+
+  sudo systemctl stop msm
+  sudo systemctl disable msm
+
+### Notes
+
+- MSM does not need to run as root. Any user that has read/write access to
+  your server folders will work.
+
+- If you use nvm instead of a system-wide Node.js install, the node binary
+  will NOT be at /usr/bin/node. Use the full nvm path instead, for example:
+
+    ExecStart=/home/natalie/.nvm/versions/node/v20.11.0/bin/node server.js
+
+  Run `which node` while nvm is active to get the correct path.
+
+- If you change the port MSM listens on, you can pass it as an environment
+  variable by adding this line inside the [Service] block:
+
+    Environment=PORT=9090
+
+- MSM will automatically restart itself if it crashes (Restart=on-failure).
+
+---
+
+## Adding a Server
 ## Usage
 
 ### Attaching an existing server
@@ -239,6 +320,23 @@ Server configs are persisted automatically to `data/servers.json` which is creat
 
 ## Known Limitations
 
+  minecraft-server-manager/
+  |-- server.js              Express + WebSocket entry point
+  |-- src/
+  |   |-- serverManager.js   Persistent server config store (data/servers.json)
+  |   |-- processManager.js  Child process lifecycle and console streaming
+  |   |-- serverDetector.js  Auto-detect type/jar/script, read/write properties
+  |   |-- serverCreator.js   Download and set up vanilla servers from Mojang
+  |   |-- playitManager.js   playit.gg tunnel process manager
+  |-- public/
+  |   |-- index.html         Single-page app shell
+  |   |-- app.js             All frontend logic
+  |   |-- style.css          Styles
+  |-- extras/
+  |   |-- msm.service        systemd service file template (see above)
+  |-- data/
+  |   |-- servers.json       Persisted server configs (auto-created)
+  |-- _docs/                 Internal session notes (excluded from git)
 - File browser is read-only (navigation only, no editing)
 - No player list, ops, or whitelist management UI
 - No scheduled tasks or auto-restart on crash
