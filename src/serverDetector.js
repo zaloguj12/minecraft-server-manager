@@ -48,8 +48,7 @@ function detect(serverPath) {
     return { valid: false, error: `Cannot read directory: ${err.message}` };
   }
 
-  const filesLower = files.map(f => f.toLowerCase());
-  const jars       = files.filter(f => f.toLowerCase().endsWith('.jar'));
+  const jars = files.filter(f => f.toLowerCase().endsWith('.jar'));
 
   // Folder structure hints
   const hasMods    = files.some(f => f === 'mods'    && isDir(serverPath, f));
@@ -65,11 +64,7 @@ function detect(serverPath) {
   }
 
   // Detect startup script (platform-preferred order)
-  const scriptPriority = process.platform === 'win32' ? SCRIPT_NAMES_WIN : SCRIPT_NAMES_UNIX;
-  const scriptFile = scriptPriority.find(s => filesLower.includes(s.toLowerCase()))
-    // preserve original casing from the actual filesystem
-    ? files.find(f => scriptPriority.some(s => f.toLowerCase() === s.toLowerCase())) || null
-    : null;
+  const scriptFile = detectStartupScript(files);
 
   if (jars.length === 0) {
     // No jars found — could be script-only or partially set-up
@@ -232,4 +227,22 @@ function extractVersion(jarName) {
   return m ? m[1] : 'unknown';
 }
 
-module.exports = { detect, listJars, listScripts, readProperties, writeProperties, readEula, writeEula };
+function detectStartupScript(files, platform = process.platform) {
+  const scriptPriority = platform === 'win32' ? SCRIPT_NAMES_WIN : SCRIPT_NAMES_UNIX;
+  for (const preferred of scriptPriority) {
+    const match = files.find(f => f.toLowerCase() === preferred.toLowerCase());
+    if (match) return match;
+  }
+  return null;
+}
+
+module.exports = {
+  detect,
+  listJars,
+  listScripts,
+  readProperties,
+  writeProperties,
+  readEula,
+  writeEula,
+  detectStartupScript
+};

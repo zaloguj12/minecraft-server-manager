@@ -70,6 +70,27 @@ function typeColor(type) {
   return map[type] || '#94a3b8';
 }
 
+function clearElement(el) {
+  el.replaceChildren();
+}
+
+function setInlineMessage(el, message, colorVar = '--text-dim') {
+  clearElement(el);
+  const span = document.createElement('span');
+  span.style.color = `var(${colorVar})`;
+  span.style.fontSize = '12px';
+  span.textContent = message;
+  el.appendChild(span);
+}
+
+function setSelectMessage(selectEl, message, colorVar) {
+  clearElement(selectEl);
+  const opt = document.createElement('option');
+  if (colorVar) opt.style.color = `var(${colorVar})`;
+  opt.textContent = message;
+  selectEl.appendChild(opt);
+}
+
 // ============================================================
 // API CLIENT
 // ============================================================
@@ -156,7 +177,7 @@ async function loadServers() {
 
 function renderServerList() {
   const list = document.getElementById('server-list');
-  list.innerHTML = '';
+  clearElement(list);
 
   if (state.servers.length === 0) {
     const msg = document.createElement('div');
@@ -303,7 +324,7 @@ async function restartServer() {
 
 function connectConsole(serverId) {
   disconnectConsole();
-  document.getElementById('console-output').innerHTML = '';
+  clearElement(document.getElementById('console-output'));
 
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const ws    = new WebSocket(`${proto}//${location.host}/ws/console/${serverId}`);
@@ -386,14 +407,14 @@ async function loadProperties() {
   if (!state.selectedId) return;
   const commonDiv = document.getElementById('props-common');
   const allDiv    = document.getElementById('props-all');
-  commonDiv.innerHTML = '<span style="color:var(--text-dim);font-size:12px;">Loading...</span>';
-  allDiv.innerHTML = '';
+  setInlineMessage(commonDiv, 'Loading...');
+  clearElement(allDiv);
 
   try {
     const data = await api('GET', `/api/servers/${state.selectedId}/properties`);
     renderProperties(data.properties || {});
   } catch (err) {
-    commonDiv.innerHTML = `<span style="color:var(--danger);font-size:12px;">Failed to load: ${err.message}</span>`;
+    setInlineMessage(commonDiv, `Failed to load: ${err.message}`, '--danger');
   }
 }
 
@@ -446,8 +467,8 @@ function makeFieldEl(key, val, type, options) {
 function renderProperties(props) {
   const commonDiv = document.getElementById('props-common');
   const allDiv    = document.getElementById('props-all');
-  commonDiv.innerHTML = '';
-  allDiv.innerHTML = '';
+  clearElement(commonDiv);
+  clearElement(allDiv);
 
   const grid = document.createElement('div');
   grid.className = 'props-grid';
@@ -498,21 +519,21 @@ async function loadFiles(dir) {
   state.currentDir = dir !== undefined ? dir : '';
 
   const container = document.getElementById('files-list');
-  container.innerHTML = '<span style="color:var(--text-dim);font-size:12px;">Loading...</span>';
+  setInlineMessage(container, 'Loading...');
 
   try {
     const data = await api('GET', `/api/servers/${state.selectedId}/files?dir=${encodeURIComponent(state.currentDir)}`);
     renderFiles(data);
   } catch (err) {
-    container.innerHTML = `<span style="color:var(--danger);font-size:12px;">${err.message}</span>`;
+    setInlineMessage(container, err.message, '--danger');
   }
 }
 
 function renderFiles(data) {
   const container = document.getElementById('files-list');
   const crumb     = document.getElementById('files-breadcrumb');
-  container.innerHTML = '';
-  crumb.innerHTML = '';
+  clearElement(container);
+  clearElement(crumb);
 
   const rootPart = document.createElement('span');
   rootPart.className = 'breadcrumb-part';
@@ -543,7 +564,15 @@ function renderFiles(data) {
     const parentDir = parentSegments.join('/');
     const backRow   = document.createElement('div');
     backRow.className = 'file-row';
-    backRow.innerHTML = '<span class="file-icon">\u2191</span><span class="file-name" style="color:var(--text-dim)">.. (up)</span>';
+    const backIcon = document.createElement('span');
+    backIcon.className = 'file-icon';
+    backIcon.textContent = '\u2191';
+    const backName = document.createElement('span');
+    backName.className = 'file-name';
+    backName.style.color = 'var(--text-dim)';
+    backName.textContent = '.. (up)';
+    backRow.appendChild(backIcon);
+    backRow.appendChild(backName);
     backRow.onclick = () => loadFiles(parentDir);
     container.appendChild(backRow);
   }
@@ -580,7 +609,7 @@ function renderFiles(data) {
   }
 
   if (!data.files || data.files.length === 0) {
-    container.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Empty directory.</span>';
+    setInlineMessage(container, 'Empty directory.', '--text-muted');
   }
 }
 
@@ -601,7 +630,7 @@ function openFileViewer(relativePath, filename) {
 
   loadingEl.classList.remove('hidden');
   errorEl.classList.add('hidden');
-  contentEl.innerHTML = '';
+  clearElement(contentEl);
   contentEl.classList.add('hidden');
   linecountEl.textContent = '';
   copyBtn.disabled = true;
@@ -696,13 +725,13 @@ async function refreshJarList() {
   if (!server) return;
 
   const picker = document.getElementById('set-jar-picker');
-  picker.innerHTML = '<option style="color:var(--text-muted)">Loading...</option>';
+  setSelectMessage(picker, 'Loading...', '--text-muted');
 
   try {
     const data = await api('POST', '/api/list-jars', { serverPath: server.serverPath });
-    picker.innerHTML = '';
+    clearElement(picker);
     if (data.jars.length === 0) {
-      picker.innerHTML = '<option style="color:var(--text-muted)">No .jar files found</option>';
+      setSelectMessage(picker, 'No .jar files found', '--text-muted');
       return;
     }
     for (const jar of data.jars) {
@@ -716,7 +745,7 @@ async function refreshJarList() {
       document.getElementById('set-jar').value = picker.value;
     };
   } catch (_) {
-    picker.innerHTML = '<option style="color:var(--danger)">Failed to list jars</option>';
+    setSelectMessage(picker, 'Failed to list jars', '--danger');
   }
 }
 
@@ -725,11 +754,11 @@ async function refreshScriptList() {
   if (!server) return;
 
   const picker = document.getElementById('set-script-picker');
-  picker.innerHTML = '<option style="color:var(--text-muted)">Loading...</option>';
+  setSelectMessage(picker, 'Loading...', '--text-muted');
 
   try {
     const data = await api('POST', '/api/list-scripts', { serverPath: server.serverPath });
-    picker.innerHTML = '';
+    clearElement(picker);
 
     // Always show a (none) option first so the user can clear the script
     const noneOpt = document.createElement('option');
@@ -757,7 +786,7 @@ async function refreshScriptList() {
       document.getElementById('set-script').value = picker.value;
     };
   } catch (_) {
-    picker.innerHTML = '<option style="color:var(--danger)">Failed to list scripts</option>';
+    setSelectMessage(picker, 'Failed to list scripts', '--danger');
   }
 }
 
@@ -956,11 +985,11 @@ async function attachServer() {
 
 async function loadVersions(includeSnapshots) {
   const sel    = document.getElementById('cr-version');
-  sel.innerHTML = '<option>Loading...</option>';
+  setSelectMessage(sel, 'Loading...');
   try {
     const data   = await api('GET', `/api/minecraft/versions?snapshots=${includeSnapshots}`);
     state.versions = data.versions;
-    sel.innerHTML  = '';
+    clearElement(sel);
     for (const v of data.versions) {
       const opt     = document.createElement('option');
       opt.value     = v.id;
@@ -968,7 +997,7 @@ async function loadVersions(includeSnapshots) {
       sel.appendChild(opt);
     }
   } catch (err) {
-    sel.innerHTML = '<option>Failed to load</option>';
+    setSelectMessage(sel, 'Failed to load');
     toast('Could not fetch version list from Mojang', 'error');
   }
 }
@@ -1030,16 +1059,26 @@ function renderPlayitWidget() {
 
   const tunnelDiv = document.getElementById('playit-tunnels');
   if (tunnelDiv) {
-    tunnelDiv.innerHTML = (tunnels && tunnels.length > 0)
-      ? tunnels.map(t => `<div>${t}</div>`).join('')
-      : '';
+    clearElement(tunnelDiv);
+    for (const tunnel of (tunnels || [])) {
+      const row = document.createElement('div');
+      row.textContent = tunnel;
+      tunnelDiv.appendChild(row);
+    }
   }
 
   const claimDiv = document.getElementById('playit-claim-url');
   if (claimDiv) {
-    claimDiv.innerHTML = claimUrl
-      ? `<a href="${claimUrl}" target="_blank" title="Claim your playit.gg tunnel">Claim tunnel &#8599;</a>`
-      : '';
+    clearElement(claimDiv);
+    if (claimUrl) {
+      const link = document.createElement('a');
+      link.href = claimUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.title = 'Claim your playit.gg tunnel';
+      link.textContent = 'Claim tunnel \u2197';
+      claimDiv.appendChild(link);
+    }
   }
 
   const btn = document.getElementById('btn-playit-toggle');
