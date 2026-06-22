@@ -3,6 +3,7 @@
 const { spawn } = require('child_process');
 const path      = require('path');
 const EventEmitter = require('events');
+const pathSecurity = require('./pathSecurity');
 
 const CONSOLE_BUFFER_SIZE = 500; // Lines kept per server
 
@@ -32,57 +33,12 @@ class ProcessManager extends EventEmitter {
       throw new Error('Server is already running');
     }
 
-    const {
-      serverPath,
-      javaPath     = 'java',
-      jarFile,
-      startupScript = null,
-      minRam        = 512,
-      maxRam        = 1024,
-      javaArgs      = ''
-    } = config;
-
-    let proc;
-    let launchDesc;
-
-    if (startupScript) {
-      // ---- Script mode ----
-      const isWindows = process.platform === 'win32';
-      const ext       = path.extname(startupScript).toLowerCase();
-
-      let cmd, args;
-      if (isWindows && (ext === '.bat' || ext === '.cmd')) {
-        cmd  = 'cmd';
-        args = ['/c', startupScript];
-      } else {
-        // .sh on any platform, or unknown extension -> try bash
-        cmd  = 'bash';
-        args = [startupScript];
-      }
-
-      launchDesc = `${cmd} ${args.join(' ')}`;
-      proc = spawn(cmd, args, {
-        cwd:   serverPath,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        shell: false
-      });
-    } else {
-      // ---- Jar mode (original) ----
-      if (!jarFile) throw new Error('No jar file configured for this server');
-
-      const jvmArgs = [`-Xms${minRam}M`, `-Xmx${maxRam}M`];
-      if (javaArgs && javaArgs.trim()) {
-        jvmArgs.push(...javaArgs.trim().split(/\s+/).filter(Boolean));
-      }
-      jvmArgs.push('-jar', jarFile, '--nogui');
-
-      launchDesc = `${javaPath} ${jvmArgs.join(' ')}`;
-      proc = spawn(javaPath, jvmArgs, {
-        cwd:   serverPath,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        shell: false
-      });
-    }
+    const launch = buildLaunchCommand(config);
+    const proc = spawn(launch.cmd, launch.args, {
+      cwd:   launch.cwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: false
+    });
 
     // Reuse existing entry (keeps subscribers and old buffer) or create fresh
     const entry = existing || {
@@ -99,7 +55,7 @@ class ProcessManager extends EventEmitter {
     entry.startTime = Date.now();
 
     this.processes.set(id, entry);
-    this._broadcast(id, `[MSM] Starting server: ${launchDesc}`);
+    this._broadcast(id, `[MSM] Starting server: ${launch.launchDesc}`);
 
     // Handle stdout and stderr identically
     const handleData = (data) => {
@@ -250,4 +206,58 @@ class ProcessManager extends EventEmitter {
   }
 }
 
-module.exports = new ProcessManager();
+function buildLaunchCommand(config, platform = process.platform) {
+  const {
+    serverPath,
+    javaPath     = 'java',
+    jarFile,
+    startupScript = null,
+    minRam        = 512,
+    maxRam        = 1024,
+    javaArgs      = ''
+  } = config;
+
+  const cwd = path.resolve(serverPath);
+
+  if (startupScript) {
+    const scriptPath = pathSecurity.resolveInside(cwd, startupScript);
+    const ext = path.extname(scriptPath).toLowerCase();
+
+    let cmd, args;
+    if (platform === 'win32' && (ext === '.bat' || ext === '.cmd')) {
+      cmd = 'cmd';
+      args = ['/c', scriptPath];
+    } else {
+      cmd = 'bash';
+      args = [scriptPath];
+    }
+
+    return {
+      cmd,
+      args,
+      cwd,
+      launchDesc: `${cmd} ${args.join(' ')}`
+    };
+  }
+
+  if (!jarFile) throw new Error('No jar file configured for this server');
+
+  const jarPath = pathSecurity.resolveInside(cwd, jarFile);
+  const jvmArgs = [`-Xms${minRam}M`, `-Xmx${maxRam}M`];
+  if (javaArgs && javaArgs.trim()) {
+    jvmArgs.push(...javaArgs.trim().split(/\s+/).filter(Boolean));
+  }
+  jvmArgs.push('-jar', jarPath, '--nogui');
+
+  return {
+    cmd: javaPath,
+    args: jvmArgs,
+    cwd,
+    launchDesc: `${javaPath} ${jvmArgs.join(' ')}`
+  };
+}
+
+const processManager = new ProcessManager();
+processManager.buildLaunchCommand = buildLaunchCommand;
+
+module.exports = processManager;

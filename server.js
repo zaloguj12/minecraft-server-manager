@@ -11,6 +11,7 @@ const processManager = require('./src/processManager');
 const serverDetector = require('./src/serverDetector');
 const serverCreator  = require('./src/serverCreator');
 const playitManager  = require('./src/playitManager');
+const pathSecurity   = require('./src/pathSecurity');
 
 const PORT = process.env.PORT || 8080;
 
@@ -214,13 +215,10 @@ app.get('/api/servers/:id/files', (req, res) => {
   if (!s) return res.status(404).json({ error: 'Server not found' });
 
   const subDir = req.query.dir || '';
-  const base   = path.resolve(s.serverPath);
-  const target = path.resolve(base, subDir);
-
-  // Prevent path traversal outside server directory
-  if (!target.startsWith(base)) return res.status(403).json({ error: 'Access denied' });
 
   try {
+    const base = path.resolve(s.serverPath);
+    const target = pathSecurity.resolveInside(base, subDir);
     const entries = fs.readdirSync(target, { withFileTypes: true });
     const files = entries.map(e => {
       let size = null;
@@ -230,15 +228,16 @@ app.get('/api/servers/:id/files', (req, res) => {
       return {
         name:        e.name,
         isDirectory: e.isDirectory(),
-        relativePath: subDir ? path.join(subDir, e.name).replace(/\\/g, '/') : e.name,
+        relativePath: pathSecurity.toRelativePath(base, path.join(target, e.name)),
         size
       };
     }).sort((a, b) => {
       if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
       return a.name.localeCompare(b.name);
     });
-    res.json({ files, currentDir: subDir });
+    res.json({ files, currentDir: pathSecurity.toRelativePath(base, target) });
   } catch (err) {
+    if (err.message === 'Access denied') return res.status(403).json({ error: 'Access denied' });
     res.status(500).json({ error: err.message });
   }
 });
@@ -249,13 +248,10 @@ app.get('/api/servers/:id/files/content', (req, res) => {
   if (!s) return res.status(404).json({ error: 'Server not found' });
 
   const filePath = req.query.path || '';
-  const base     = path.resolve(s.serverPath);
-  const target   = path.resolve(base, filePath);
-
-  // Prevent path traversal outside server directory
-  if (!target.startsWith(base)) return res.status(403).json({ error: 'Access denied' });
 
   try {
+    const base = path.resolve(s.serverPath);
+    const target = pathSecurity.resolveInside(base, filePath);
     const stat = fs.statSync(target);
     if (stat.isDirectory()) return res.status(400).json({ error: 'Path is a directory' });
 
@@ -292,6 +288,7 @@ app.get('/api/servers/:id/files/content', (req, res) => {
 
     res.json({ content: buf.toString('utf8'), size: stat.size });
   } catch (err) {
+    if (err.message === 'Access denied') return res.status(403).json({ error: 'Access denied' });
     res.status(500).json({ error: err.message });
   }
 });
