@@ -228,16 +228,16 @@ Scripts are detected in this priority order:
 
 If the type can't be determined from the jar name, it falls back to checking whether a `mods/` or `plugins/` folder exists.
 
-### playit.gg tunnels
+~~### playit.gg tunnels~~
 
-[playit.gg](https://playit.gg) lets you expose your server to the internet without port forwarding.
+~~[playit.gg](https://playit.gg) lets you expose your server to the internet without port forwarding.~~
 
-1. Download the playit binary from [playit.gg/download](https://playit.gg/download)
-2. Click **Config** in the playit widget at the bottom of the sidebar
-3. Set the path to the binary and optionally a secret key
-4. Click **Save & Start**
+~~1. Download the playit binary from [playit.gg/download](https://playit.gg/download)~~
+~~2. Click **Config** in the playit widget at the bottom of the sidebar~~
+~~3. Set the path to the binary and optionally a secret key~~
+~~4. Click **Save & Start**~~
 
-On first run (no secret key), a claim URL appears in the sidebar. Open it to link the tunnel to your account. Once claimed, your tunnel address appears automatically.
+~~On first run (no secret key), a claim URL appears in the sidebar. Open it to link the tunnel to your account. Once claimed, your tunnel address appears automatically.~~
 
 ---
 
@@ -254,7 +254,7 @@ minecraft-server-manager/
 |   |-- serverDetector.js   Detects server type/jar/script from folder, reads/writes server.properties
 |   |-- serverCreator.js    Downloads vanilla server jars from Mojang's API
 |   |-- processManager.js   Spawns and manages Java/script processes, WebSocket console broadcast
-|   `-- playitManager.js    Manages the playit.gg subprocess and parses its output
+|   ~~`-- playitManager.js    Manages the playit.gg subprocess and parses its output~~
 |
 |-- public/
 |   |-- index.html          SPA shell
@@ -298,13 +298,13 @@ All endpoints return JSON.
 | GET | `/api/minecraft/versions` | List Minecraft versions from Mojang (`?snapshots=true`) |
 | POST | `/api/minecraft/create` | Create a new vanilla server (async, progress via WebSocket) |
 
-### playit.gg
+~~### playit.gg~~
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/playit/status` | Current status, tunnels, and claim URL |
-| POST | `/api/playit/start` | Start playit (`{ playitPath, secretKey }`) |
-| POST | `/api/playit/stop` | Stop playit |
+~~~~~~| Method | Path | Description |~~
+~~|--------|------|-------------|~~
+~~| GET | `/api/playit/status` | Current status, tunnels, and claim URL |~~
+~~| POST | `/api/playit/start` | Start playit (`{ playitPath, secretKey }`) |~~
+~~| POST | `/api/playit/stop` | Stop playit |~~
 
 ### WebSocket
 
@@ -334,7 +334,7 @@ Server configs are persisted automatically to `data/servers.json` which is creat
   |   |-- processManager.js  Child process lifecycle and console streaming
   |   |-- serverDetector.js  Auto-detect type/jar/script, read/write properties
   |   |-- serverCreator.js   Download and set up vanilla servers from Mojang
-  |   |-- playitManager.js   playit.gg tunnel process manager
+  |   ~~|-- playitManager.js   playit.gg tunnel process manager~~
   |-- public/
   |   |-- index.html         Single-page app shell
   |   |-- app.js             All frontend logic
