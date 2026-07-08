@@ -318,22 +318,6 @@ Server configs are persisted automatically to `data/servers.json` which is creat
 
 ## Known Limitations
 
-  minecraft-server-manager/
-  |-- server.js              Express + WebSocket entry point
-  |-- src/
-  |   |-- serverManager.js   Persistent server config store (data/servers.json)
-  |   |-- processManager.js  Child process lifecycle and console streaming
-  |   |-- serverDetector.js  Auto-detect type/jar/script, read/write properties
-  |   |-- serverCreator.js   Download and set up vanilla servers from Mojang
-  |-- public/
-  |   |-- index.html         Single-page app shell
-  |   |-- app.js             All frontend logic
-  |   |-- style.css          Styles
-  |-- extras/
-  |   |-- msm.service        systemd service file template (see above)
-  |-- data/
-  |   |-- servers.json       Persisted server configs (auto-created)
-  |-- _docs/                 Internal session notes (excluded from git)
 - File browser is read-only (navigation only, no editing)
 - No player list, ops, or whitelist management UI
 - No scheduled tasks or auto-restart on crash
