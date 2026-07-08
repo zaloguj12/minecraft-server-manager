@@ -144,26 +144,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .btn-add:hover { background: var(--accent); color: #000; }
 
-/* playit widget 
-#playit-widget {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 8px 10px;
-  font-size: 12px;
-}
-#playit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-.playit-label { font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; }
-#playit-tunnels { color: var(--accent); font-size: 11px; word-break: break-all; }
-#playit-claim-url { margin-top: 3px; font-size: 10px; word-break: break-all; }
-#playit-claim-url a { font-size: 10px; }
-#playit-controls { display: flex; gap: 5px; margin-top: 6px; }
-*/
+
 /* ============================================================
    MAIN CONTENT
 ============================================================ */
@@ -476,9 +457,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 button:disabled { opacity: 0.35; pointer-events: none; }
 
 .btn-small { padding: 4px 9px; font-size: 12px; }
-/* .btn-playit { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
-.btn-playit:hover { background: var(--accent); color: #000; }
-*/
+
 #btn-send {
   background: var(--accent-dim);
   border: 1px solid var(--accent);
@@ -530,7 +509,7 @@ button:disabled { opacity: 0.35; pointer-events: none; }
 ============================================================ */
 .hidden { display: none !important; }
 
-/* #modal-overlay, #modal-playit-overlay {
+#modal-overlay, #modal-fileview-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.72);
@@ -541,7 +520,7 @@ button:disabled { opacity: 0.35; pointer-events: none; }
   backdrop-filter: blur(3px);
 }
 
-#modal-add, #modal-playit {
+#modal-add {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -554,11 +533,9 @@ button:disabled { opacity: 0.35; pointer-events: none; }
   flex-direction: column;
   gap: 12px;
 }
-*/
-#modal-add::-webkit-scrollbar,
-/*#modal-playit::-webkit-scrollbar { width: 4px; }*/
-#modal-add::-webkit-scrollbar-thumb,
-/*modal-playit::-webkit-scrollbar-thumb { background: var(--border); }*/
+
+#modal-add::-webkit-scrollbar { width: 4px; }
+#modal-add::-webkit-scrollbar-thumb { background: var(--border); }
 
 .modal-header {
   display: flex;

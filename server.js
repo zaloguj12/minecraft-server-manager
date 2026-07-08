@@ -10,7 +10,6 @@ const serverManager  = require('./src/serverManager');
 const processManager = require('./src/processManager');
 const serverDetector = require('./src/serverDetector');
 const serverCreator  = require('./src/serverCreator');
-//const playitManager  = require('./src/playitManager');
 
 const PORT = process.env.PORT || 8080;
 
@@ -37,10 +36,6 @@ processManager.on('statusChange', (serverId, status) => {
   broadcast({ type: 'server_status', serverId, status });
 });
 
-// Forward playit status changes to browser
-//playitManager.on('statusChange', (data) => {
-//  broadcast({ type: 'playit_status', ...data });
-//});
 
 // ============================================================
 // REST API
@@ -366,27 +361,6 @@ app.post('/api/minecraft/create', (req, res) => {
   });
 });
 
-// --- playit.gg ---
-//app.get('/api/playit/status', (req, res) => {
-//  res.json(playitManager.getStatus());
-//});
-
-//app.post('/api/playit/start', (req, res) => {
-//  try {
-//    playitManager.start({
-//      playitPath: req.body.playitPath || 'playit',
-//      secretKey:  req.body.secretKey  || ''
-//    });
-//    res.json({ success: true });
-//  } catch (err) {
-//    res.status(500).json({ error: err.message });
-//  }
-//});
-
-//app.post('/api/playit/stop', (req, res) => {
-//  playitManager.stop();
-//  res.json({ success: true });
-//});
 
 // ============================================================
 // HTTP Server + WebSocket setup
@@ -429,9 +403,6 @@ wss.on('connection', (ws, req, parts) => {
 
   } else if (channel === 'notifications') {
     notificationClients.add(ws);
-    // Send current playit status immediately on connect
-//   try { ws.send(JSON.stringify({ type: 'playit_status', ...playitManager.getStatus() })); } catch (_) {}
-
     ws.on('close', () => {
       notificationClients.delete(ws);
     });

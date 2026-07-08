@@ -9,8 +9,6 @@ const state = {
   consoleWs:     null,
   notifWs:       null,
   currentDir:    '',
-//  playit:        { status: 'stopped', tunnels: [], claimUrl: null },
-//  playitConfig:  { path: 'playit', secret: '' },
   versions:      [],
   createTempId:  null,
 };
@@ -109,10 +107,6 @@ function handleNotification(data) {
       updateServerStatus(data.serverId, data.status);
       break;
 
-//    case 'playit_status':
-//      state.playit = { status: data.status, tunnels: data.tunnels || [], claimUrl: data.claimUrl || null };
-//      renderPlayitWidget();
-//      break;
 
     case 'creation_progress':
       if (data.tempId === state.createTempId) {
@@ -1018,85 +1012,6 @@ function showCreateError(message) {
   state.createTempId = null;
 }
 
-/*
-// ============================================================
-// PLAYIT.GG
-// ============================================================
-
-function renderPlayitWidget() {
-  const { status, tunnels, claimUrl } = state.playit;
-
-  const dot = document.getElementById('playit-status-dot');
-  if (dot) dot.className = `status-dot ${status}`;
-
-  const tunnelDiv = document.getElementById('playit-tunnels');
-  if (tunnelDiv) {
-    tunnelDiv.innerHTML = (tunnels && tunnels.length > 0)
-      ? tunnels.map(t => `<div>${t}</div>`).join('')
-      : '';
-  }
-
-  const claimDiv = document.getElementById('playit-claim-url');
-  if (claimDiv) {
-    claimDiv.innerHTML = claimUrl
-      ? `<a href="${claimUrl}" target="_blank" title="Claim your playit.gg tunnel">Claim tunnel &#8599;</a>`
-      : '';
-  }
-
-  const btn = document.getElementById('btn-playit-toggle');
-  if (btn) {
-    if (status === 'stopped' || status === 'error') {
-      btn.textContent = 'Start';
-      btn.classList.remove('btn-danger');
-      btn.classList.add('btn-playit');
-    } else {
-      btn.textContent = 'Stop';
-      btn.classList.remove('btn-playit');
-      btn.classList.add('btn-danger');
-    }
-  }
-}
-
-async function togglePlayit() {
-  const { status } = state.playit;
-  if (status === 'stopped' || status === 'error') {
-    showPlayitModal();
-  } else {
-    try {
-      await api('POST', '/api/playit/stop');
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  }
-}
-
-function showPlayitModal() {
-  document.getElementById('pl-path').value   = state.playitConfig.path;
-  document.getElementById('pl-secret').value = state.playitConfig.secret;
-  document.getElementById('modal-playit-overlay').classList.remove('hidden');
-}
-
-function hidePlayitModal() {
-  document.getElementById('modal-playit-overlay').classList.add('hidden');
-}
-
-function playitModalOverlayClick(e) {
-  if (e.target === document.getElementById('modal-playit-overlay')) hidePlayitModal();
-}
-
-async function savePlayitConfig() {
-  const playitPath = document.getElementById('pl-path').value.trim() || 'playit';
-  const secretKey  = document.getElementById('pl-secret').value.trim();
-  state.playitConfig = { path: playitPath, secret: secretKey };
-  hidePlayitModal();
-  try {
-    await api('POST', '/api/playit/start', { playitPath, secretKey });
-  } catch (err) {
-    toast(err.message, 'error');
-  }
-}
-
-*/
 // ============================================================
 // EVENT BINDING
 // ============================================================
@@ -1104,8 +1019,6 @@ async function savePlayitConfig() {
 function bindEvents() {
   // Sidebar
   document.getElementById('btn-add-server').addEventListener('click', showAddModal);
-//  document.getElementById('btn-playit-toggle').addEventListener('click', togglePlayit);
-//  document.getElementById('btn-playit-config').addEventListener('click', showPlayitModal);
 
   // Server controls
   document.getElementById('btn-start').addEventListener('click',   startServer);
