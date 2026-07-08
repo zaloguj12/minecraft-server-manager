@@ -144,7 +144,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .btn-add:hover { background: var(--accent); color: #000; }
 
-/* playit widget */
+/* playit widget 
 #playit-widget {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -163,7 +163,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 #playit-claim-url { margin-top: 3px; font-size: 10px; word-break: break-all; }
 #playit-claim-url a { font-size: 10px; }
 #playit-controls { display: flex; gap: 5px; margin-top: 6px; }
-
+*/
 /* ============================================================
    MAIN CONTENT
 ============================================================ */
@@ -476,9 +476,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 button:disabled { opacity: 0.35; pointer-events: none; }
 
 .btn-small { padding: 4px 9px; font-size: 12px; }
-.btn-playit { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+/* .btn-playit { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
 .btn-playit:hover { background: var(--accent); color: #000; }
-
+*/
 #btn-send {
   background: var(--accent-dim);
   border: 1px solid var(--accent);
@@ -530,7 +530,7 @@ button:disabled { opacity: 0.35; pointer-events: none; }
 ============================================================ */
 .hidden { display: none !important; }
 
-#modal-overlay, #modal-playit-overlay {
+/* #modal-overlay, #modal-playit-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.72);
@@ -554,10 +554,11 @@ button:disabled { opacity: 0.35; pointer-events: none; }
   flex-direction: column;
   gap: 12px;
 }
+*/
 #modal-add::-webkit-scrollbar,
-#modal-playit::-webkit-scrollbar { width: 4px; }
+/*#modal-playit::-webkit-scrollbar { width: 4px; }*/
 #modal-add::-webkit-scrollbar-thumb,
-#modal-playit::-webkit-scrollbar-thumb { background: var(--border); }
+/*modal-playit::-webkit-scrollbar-thumb { background: var(--border); }*/
 
 .modal-header {
   display: flex;

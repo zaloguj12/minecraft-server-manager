@@ -18,7 +18,7 @@ A lightweight, web-based Minecraft server manager. Point it at an existing serve
 - **Properties editor** — edit `server.properties` through a form, common settings shown prominently
 - **File browser** — navigate your server directory from the web interface
 - **Per-server settings** — RAM allocation, Java path, extra JVM flags, jar file selection, startup script
-- **playit.gg integration** — start a playit tunnel from the sidebar, see the tunnel address and claim URL live
+- ~~**playit.gg integration** — start a playit tunnel from the sidebar, see the tunnel address and claim URL live~~ Cancelled since I can't get it to work
 - **Windows and Linux** — no platform-specific dependencies
 - **No build step** — vanilla HTML/CSS/JS frontend, runs straight from `node server.js`
 

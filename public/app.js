@@ -9,8 +9,8 @@ const state = {
   consoleWs:     null,
   notifWs:       null,
   currentDir:    '',
-  playit:        { status: 'stopped', tunnels: [], claimUrl: null },
-  playitConfig:  { path: 'playit', secret: '' },
+//  playit:        { status: 'stopped', tunnels: [], claimUrl: null },
+//  playitConfig:  { path: 'playit', secret: '' },
   versions:      [],
   createTempId:  null,
 };
@@ -109,10 +109,10 @@ function handleNotification(data) {
       updateServerStatus(data.serverId, data.status);
       break;
 
-    case 'playit_status':
-      state.playit = { status: data.status, tunnels: data.tunnels || [], claimUrl: data.claimUrl || null };
-      renderPlayitWidget();
-      break;
+//    case 'playit_status':
+//      state.playit = { status: data.status, tunnels: data.tunnels || [], claimUrl: data.claimUrl || null };
+//      renderPlayitWidget();
+//      break;
 
     case 'creation_progress':
       if (data.tempId === state.createTempId) {
@@ -1018,6 +1018,7 @@ function showCreateError(message) {
   state.createTempId = null;
 }
 
+/*
 // ============================================================
 // PLAYIT.GG
 // ============================================================
@@ -1095,6 +1096,7 @@ async function savePlayitConfig() {
   }
 }
 
+*/
 // ============================================================
 // EVENT BINDING
 // ============================================================
@@ -1102,8 +1104,8 @@ async function savePlayitConfig() {
 function bindEvents() {
   // Sidebar
   document.getElementById('btn-add-server').addEventListener('click', showAddModal);
-  document.getElementById('btn-playit-toggle').addEventListener('click', togglePlayit);
-  document.getElementById('btn-playit-config').addEventListener('click', showPlayitModal);
+//  document.getElementById('btn-playit-toggle').addEventListener('click', togglePlayit);
+//  document.getElementById('btn-playit-config').addEventListener('click', showPlayitModal);
 
   // Server controls
   document.getElementById('btn-start').addEventListener('click',   startServer);
